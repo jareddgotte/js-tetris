@@ -63,24 +63,13 @@ landed[15] = [0,1,0,0,0,1,1,1,0,0];*/
 landed[14] = [0,0,0,3,1,1,1,1,1,1];
 landed[15] = [0,0,3,3,0,1,1,1,0,0];*/
 
-// Needed to clone arrays of arrays for debugging
-/*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
-	var newObj = (this instanceof Array) ? [] : {};
-	for (i in this) {
-		if (i == 'clone') continue;
-		if (this[i] && typeof this[i] == "object") {
-			newObj[i] = this[i].clone();
-		} else newObj[i] = this[i]
-	} return newObj;
-}*/
-
 // Returns the color of the Tet in HTML color code string form
 function tetColor (color) {
 	switch (color) { // Colors from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
 		case 1: // Cyan
 			return '#3cc'; //0ff
 		case 2: // Blue
-			return '#00c';
+			return '#0af';
 		case 3: // Orange
 			return '#f90';
 		case 4: // Yellow
@@ -139,19 +128,32 @@ window.onload = function() {
 		//c2.stroke();
 		c2.fill();*/
 
-		// Draw blocks in current Tet
+	// Draw blocks in current Tet
 		if (!newTet) {
 			for (var row = 0; row < currentTet.shape.length; row++) {
 				for (var col = 0; col < currentTet.shape[row].length; col++) {
 					if (currentTet.shape[row][col] != 0) {
 						//draw block position
 						c.fillStyle = tetColor(currentTet.shape[row][col]);
-						c.fillRect((col + currentTet.topLeft.col) * block_s, (row + currentTet.topLeft.row) * block_s, block_s, block_s);
+						//c.fillRect((col + currentTet.topLeft.col) * block_s, (row + currentTet.topLeft.row) * block_s, block_s, block_s);
 					}
 				}
 			}
+			// Draw perimeter in current Tet
+			c.beginPath();
+			//console.log(currentTet.perimeter);
+			c.moveTo((currentTet.topLeft.col + currentTet.perimeter[0][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[0][1]) * block_s);
+			for (var row = 1; row < currentTet.perimeter.length; row++) {
+				c.lineTo((currentTet.topLeft.col + currentTet.perimeter[row][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[row][1]) * block_s);
+			}
+			c.closePath();
+			c.lineJoin = 'miter';
+			c.lineWidth = 3;
+			c.fillStyle = tetColor(currentTet.type+1);
+			c.fill();
+			c.stroke();
 		}
-
+		
 	}
 	
 	function createTet() {
