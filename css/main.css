@@ -1,0 +1,20 @@
+body {
+	background: #fff;
+	color: #000;
+	font: 14px/1.1 Arial, Helvetica, sans-serif;
+}
+h1 {
+	font-size: 3em;
+	line-height: 1.1;
+}
+strong, b {
+	font-weight: bold;
+}
+#main {
+	/* [disabled]border: 1px solid #000; */
+	color: #000;
+	margin: 4px auto;
+	padding: 0;
+	min-width: 768px;
+	max-width: 1038px;
+}
