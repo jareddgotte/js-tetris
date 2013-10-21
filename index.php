@@ -13,6 +13,7 @@
 <link rel="stylesheet" type="text/css" href="css/reset.css">
 <link rel="stylesheet" type="text/css" href="css/main.css">
 
+<script type="text/javascript" src="js/Tet.js"></script>
 <script type="text/javascript">
 //<![CDATA[
 
@@ -73,268 +74,23 @@ landed[15] = [0,0,3,3,0,1,1,1,0,0];*/
 	} return newObj;
 }*/
 
-function shapeMatrices (type, rotation) {
-	// Shapes from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
-	// Note that the numbers in these arrays denote their eventual color
-	var matrixMatrix = [
-		[ [[1,1,1,1]], [[1],[1],[1],[1]] ], // I
-		[ [[2,2,2],[0,0,2]], [[0,2],[0,2],[2,2]], [[2],[2,2,2]], [[2,2],[2],[2]] ], // J
-		[ [[3,3,3],[3]], [[3,3],[0,3],[0,3]], [[0,0,3],[3,3,3]], [[3],[3],[3,3]] ], // L
-		[ [[4,4],[4,4]] ], // O
-		[ [[0,5,5],[5,5]], [[5],[5,5],[0,5]] ], // S
-		[ [[6,6,6],[0,6]], [[0,6],[6,6],[0,6]], [[0,6],[6,6,6]], [[6],[6,6],[6]] ], // T
-		[ [[7,7],[0,7,7]], [[0,7],[7,7],[7]] ], // Z
-	], m = matrixMatrix[type];
-	switch (m.length) {
-		case 1:
-			return m[0];
-		case 2:
-			return m[rotation % 2];
-		case 4:
-			return m[rotation];
-		default:
-			//console.log('unexpected array length in function ' + arguments.callee.toString().substr(9, arguments.callee.toString().indexOf('(') - 9));
-			return false;
-	}
-}
-
-function Tet (type) {
-	//console.log(type);
-	this.topLeft = { row: 0, col: 4 };
-	this.potentialTopLeft = this.topLeft;
-	if (type >= 0) this.type = type;
-	else this.type = parseInt(Math.floor(Math.random()*7));
-	this.rotation = 0;
-	this.shape = shapeMatrices(this.type, this.rotation);
-}
-Tet.prototype.checkBotCollision = function() {
-	for (var row = 0; row < this.shape.length; row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
-				if (row + this.potentialTopLeft.row >= landed.length) {
-					//this block would be below the playing field
-					//console.log('below playing field');
-					return true;
-				}
-				else if (landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col] != 0) {
-					//console.log(landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col]);
-					//console.log('bot: space taken');
-					//console.log(this.potentialTopLeft);
-					//the space is taken
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-Tet.prototype.checkSideCollision = function() {
-	for (var row = 0; row < this.shape.length; row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
-				if (col + this.potentialTopLeft.col < 0) {
-					//this block would be to the left of the playing field
-					//console.log('left beyond playing field');
-					return true;
-				}
-				if (col + this.potentialTopLeft.col >= landed[0].length) {
-					//this block would be to the right of the playing field
-					//console.log('right beyond playing field');
-					return true;
-				}
-				if (landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col] != 0) {
-					//console.log('side: space taken');
-					//the space is taken
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-Tet.prototype.rotate = function() { // by default, always clockwise
-	//console.log('rotating');
-	var potRot;
-	if (this.rotation >= 3) potRot = 0;
-	else potRot = this.rotation + 1;
-	var potShape = shapeMatrices(this.type, potRot);
-	// check for potential collisions
-	for (var row = 0; row < potShape.length; row++) {
-		for (var col = 0; col < potShape[row].length; col++) {
-			if (potShape[row][col] != 0) {
-				if (col + this.topLeft.col < 0) {
-					//this block would be to the left of the playing field
-					//console.log('left beyond playing field');
-					return false;
-				}
-				if (col + this.topLeft.col >= landed[0].length) {
-					//this block would be to the right of the playing field
-					//console.log('right beyond playing field');
-					return false;
-				}
-				if (row + this.topLeft.row >= landed.length) {
-					//this block would be below the playing field
-					//console.log('below playing field');
-					return false;
-				}
-				if (landed[row + this.topLeft.row][col + this.topLeft.col] != 0) {
-					//the space is taken
-					//console.log('rotate: space is taken');
-					return false;
-				}
-			}
-		}
-	}
-	this.shape = potShape;
-	this.rotation = potRot;
-	return true;
-}
-Tet.prototype.moveLeft = function() {
-	this.potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col - 1 };
-	if (!this.checkSideCollision()) this.topLeft = this.potentialTopLeft;
-}
-Tet.prototype.moveRight = function() {
-	this.potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
-	if (!this.checkSideCollision()) this.topLeft = this.potentialTopLeft;
-}
-Tet.prototype.moveDown = function() {
-	//console.log('moving down');
-	this.potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };
-	//console.log(this.potentialTopLeft);
-	if (!this.checkBotCollision()) this.topLeft = this.potentialTopLeft;
-	else {
-		for (var row = 0; row < this.shape.length; row++) {
-			for (var col = 0; col < this.shape[row].length; col++) {
-				if (this.shape[row][col] != 0) {
-					landed[row + this.topLeft.row][col + this.topLeft.col] = this.shape[row][col];
-				}
-			}
-		}
-		return this.collided();
-	}
-	return true;
-}
-function ClumpNode (row, col, val) {
-	this.row = row;
-	this.col = col;
-	this.val = val;
-}
-function Clump (row, col) {
-	this.row = row; // row and col is the position where this clump starts on the lastRowRemoved
-	this.col = col;
-	this.topLeft = { row: 0, col: 0 };
-	this.potentialTopLeft = this.topLeft;
-	this.matrix = [];
-}
-Clump.prototype.addNode = function(node) {
-		this.matrix.push(node);
-}
-Clump.prototype.computeShape = function() {
-	var rowMin = 15, colMin = 9, rowMax = 0, colMax = 0, shape = [];
-	for (var i = 0; i < this.matrix.length; i++) {
-		if (this.matrix[i].row < rowMin) rowMin = this.matrix[i].row;
-		if (this.matrix[i].col < colMin) colMin = this.matrix[i].col;
-	}
-	for (var i = 0; i < this.matrix.length; i++) {
-		this.matrix[i].row = this.matrix[i].row - rowMin;
-		if (this.matrix[i].row > rowMax) rowMax = this.matrix[i].row;
-		this.matrix[i].col = this.matrix[i].col - colMin;
-		if (this.matrix[i].col > colMax) colMax = this.matrix[i].col;
-	}
-	for (var row = 0; row <= rowMax; row++) {
-		var tmp = [];
-		for (var col = 0; col <= colMax; col++) {
-			tmp.push(0);
-		}
-		shape.push(tmp);
-	}
-	for (var i = 0; i < this.matrix.length; i++) {
-		shape[this.matrix[i].row][this.matrix[i].col] = this.matrix[i].val;
-	}
-	
-	//console.log(this.matrix);
-	//console.log(shape);
-	this.topLeft.row = rowMin;
-	this.topLeft.col = colMin;
-	return shape;
-}
-Clump.prototype.size = function() {
-	return this.matrix.length;
-}
-Tet.prototype.collided = function() {
-	if (this.type >= 0) newTet = true;
-	//console.log('tet down collision!');
-	var isFilled, lastRowRemoved = -1;
-	for (var row = this.topLeft.row; row < landed.length; row++) {
-		isFilled = true;
-		for (var col = 0; col < landed[row].length; col++) {
-			if (landed[row][col] == 0)
-				isFilled = false;
-		}
-		if (isFilled) {
-			landed.splice(row, 1);
-			landed.unshift([0,0,0,0,0,0,0,0,0,0]);
-			lastRowRemoved = row;
-			score++;
-			console.log('score:' + score);
-		}
-	}
-	if (lastRowRemoved >= 0 && this.type >= 0) {
-		//landedBeforeFloodFill = landed.clone(); // debug
-		//calculate clumps along lastRowRemoved and above
-		var clumps = [], q, n, c, colorFound = -1, colorNow = -1, i;
-		for (var col = 0; col < landed[lastRowRemoved].length; col++) {
-			q = [], colorFound = landed[lastRowRemoved][col], i = 0;
-			q.push(new ClumpNode(lastRowRemoved, col, colorFound));
-			c = new Clump(lastRowRemoved, col);
-			while (q.length > 0 && i < 1000) {
-				n = q.shift();
-				colorNow = landed[n.row][n.col];
-				if (colorNow == colorFound && colorNow > 0) {
-					//console.log('i:'+col+' row:'+n.row+' col:'+n.col+' val:'+colorNow);
-					c.addNode(n);
-					landed[n.row][n.col] = 0;
-					if (n.col > 0) q.push(new ClumpNode(n.row, n.col - 1, colorNow));
-					if (n.col < 15) q.push(new ClumpNode(n.row, n.col + 1, colorNow));
-					if (n.row > 0) q.push(new ClumpNode(n.row - 1, n.col, colorNow));
-					if (n.row < 15) q.push(new ClumpNode(n.row + 1, n.col, colorNow));
-				}
-				i++;
-			}
-			//console.log(c.size());
-			if (c.size() > 0) clumps.push(c);
-		}
-		//console.log(clumps);
-		//clumps[0].computeShape();
-		for (var i = 0; i < clumps.length; i++) {
-			var tmp = new Tet();
-			tmp.shape = clumps[i].computeShape();
-			tmp.topLeft = clumps[i].topLeft;
-			//console.log(tmp.topLeft);
-			tmp.type = -1;
-			while (tmp.moveDown()) {}
-		}
-	}
-	return false;
-}
-
 // Returns the color of the Tet in HTML color code string form
 function tetColor (color) {
 	switch (color) { // Colors from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
 		case 1: // Cyan
-			return '#0ff';
+			return '#3cc'; //0ff
 		case 2: // Blue
-			return '#00f';
+			return '#00c';
 		case 3: // Orange
 			return '#f90';
 		case 4: // Yellow
-			return '#ff0';
+			return '#ee0';
 		case 5: // Green
-			return '#0f0';
+			return '#0c0'; // 0f0
 		case 6: // Purple
-			return '#f0f';
+			return '#c0c';
 		case 7: // Red
-			return '#f00';
+			return '#c00';
 		default: // Black
 			console.log('unexpected color: ' + color);
 			return '#fff';
