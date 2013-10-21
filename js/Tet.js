@@ -16,13 +16,10 @@
  *
  * @author Jared Gotte
  * @class Represents a Tet, both living and landed.
- * @param {Number} [type] Shape of Tet desired, naturally determined randomly.  If -1, create a blank Tet because we're going to set its topLeft, potentialTopLeft, shape and perimeter manually.
+ * @param {Number} [type] Shape of Tet desired, naturally determined randomly.  If -1, create a blank Tet because we're going to set its topLeft, shape and perimeter manually.
  * @property {Object} topLeft This is the (row, column) position the Tet is in with respect to the game board (16 rows by 10 columns); (0, 0) being the most top left position.
  * @property {Number} topLeft.row 
  * @property {Number} topLeft.col 
- * @property {Object} potentialTopLeft This is the potential (row, column) position the Tet is in.  Used to check 
- * @property {Number} potentialTopLeft.row 
- * @property {Number} potentialTopLeft.col 
  * @property {Array[Array[Number]]} shape 
  * @property {Array[Array[Number]]} petimter 
  */
@@ -33,11 +30,10 @@ function Tet (type) {
 	this.rotation = 0;
 	if (type > -1 || type == undefined) {
 		this.topLeft = { row: 0, col: 4 };
-		this.potentialTopLeft = this.topLeft;
 		this.shape = this.getShapeMatrix(this.type, this.rotation);
 		//this.perimeter = this.getPeriMatrix(this.shape);
 	}
-	else { this.topLeft = {}; this.potentialTopLeft = {}; this.shape = []; this.perimeter = []; }
+	else { this.topLeft = {}; this.shape = []; this.perimeter = []; }
 }
 /**
  * This function takes in a Tet type and rotation then outputs its shape matrix.
@@ -131,51 +127,6 @@ Tet.prototype.changeShape = function (shape) {
 	this.shape = shape;
 	this.perimeter = this.getPeriMatrix(shape);
 }
-Tet.prototype.checkBotCollision = function () {
-	for (var row = 0; row < this.shape.length; row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
-				if (row + this.potentialTopLeft.row >= landed.length) {
-					//this block would be below the playing field
-					//console.log('below playing field');
-					return true;
-				}
-				else if (landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col] != 0) {
-					//console.log(landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col]);
-					//console.log('bot: space taken');
-					//console.log(this.potentialTopLeft);
-					//the space is taken
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-Tet.prototype.checkSideCollision = function () {
-	for (var row = 0; row < this.shape.length; row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
-				if (col + this.potentialTopLeft.col < 0) {
-					//this block would be to the left of the playing field
-					//console.log('left beyond playing field');
-					return true;
-				}
-				if (col + this.potentialTopLeft.col >= landed[0].length) {
-					//this block would be to the right of the playing field
-					//console.log('right beyond playing field');
-					return true;
-				}
-				if (landed[row + this.potentialTopLeft.row][col + this.potentialTopLeft.col] != 0) {
-					//console.log('side: space taken');
-					//the space is taken
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
 Tet.prototype.rotate = function () { // by default, always clockwise
 	//console.log('rotating');
 	var potRot;
@@ -213,19 +164,64 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 	this.rotation = potRot;
 	return true;
 }
+Tet.prototype.checkBotCollision = function (potentialTopLeft) {
+	for (var row = 0; row < this.shape.length; row++) {
+		for (var col = 0; col < this.shape[row].length; col++) {
+			if (this.shape[row][col] != 0) {
+				if (row + potentialTopLeft.row >= landed.length) {
+					//this block would be below the playing field
+					//console.log('below playing field');
+					return true;
+				}
+				else if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != 0) {
+					//console.log(landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
+					//console.log('bot: space taken');
+					//console.log(potentialTopLeft);
+					//the space is taken
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+Tet.prototype.checkSideCollision = function (potentialTopLeft) {
+	for (var row = 0; row < this.shape.length; row++) {
+		for (var col = 0; col < this.shape[row].length; col++) {
+			if (this.shape[row][col] != 0) {
+				if (col + potentialTopLeft.col < 0) {
+					//this block would be to the left of the playing field
+					//console.log('left beyond playing field');
+					return true;
+				}
+				if (col + potentialTopLeft.col >= landed[0].length) {
+					//this block would be to the right of the playing field
+					//console.log('right beyond playing field');
+					return true;
+				}
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != 0) {
+					//console.log('side: space taken');
+					//the space is taken
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
 Tet.prototype.moveLeft = function () {
-	this.potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col - 1 };
-	if (!this.checkSideCollision()) this.topLeft = this.potentialTopLeft;
+	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col - 1 };
+	if (!this.checkSideCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveRight = function () {
-	this.potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
-	if (!this.checkSideCollision()) this.topLeft = this.potentialTopLeft;
+	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
+	if (!this.checkSideCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveDown = function () {
 	//console.log('moving down');
-	this.potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };
-	//console.log(this.potentialTopLeft);
-	if (!this.checkBotCollision()) this.topLeft = this.potentialTopLeft;
+	var potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };
+	//console.log(potentialTopLeft);
+	if (!this.checkBotCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 	else {
 		for (var row = 0; row < this.shape.length; row++) {
 			for (var col = 0; col < this.shape[row].length; col++) {
@@ -247,7 +243,6 @@ function Clump (row, col) {
 	this.row = row; // row and col is the position where this clump starts on the lastRowRemoved
 	this.col = col;
 	this.topLeft = { row: 0, col: 0 };
-	this.potentialTopLeft = this.topLeft;
 	this.matrix = [];
 }
 Clump.prototype.addNode = function (node) {
