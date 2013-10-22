@@ -26,21 +26,9 @@
 // Assume 10 blocks can fit horizontally and 16 blocks vertically
 // Thus, assume that canvas height will always be 1.6 times the magnitude of its width
 // Assume block width and height will always be the same
-var canvas_width = 200,
-    block_s = canvas_width / 10,
-    loop,
-		dropInterval = 750,
-    score = 0,
-		currentTet,
-    newTet = true;
-
-// Build our empty landed array
-var landed = [];
-//var landedBeforeFloodFill = []; // debug
-for (var i = 0; i < 16; i++) {
-	landed[i] = [0,0,0,0,0,0,0,0,0,0];
-	//landedBeforeFloodFill[i] = [0,0,0,0,0,0,0,0,0,0]; // debug
-}
+var loop,
+    dropInterval = 750,
+    currentTet;
 
 // debug variables
 var dropOnce = false;
@@ -62,6 +50,10 @@ landed[15] = [0,1,0,0,0,1,1,1,0,0];*/
 /*landed[13] = [2,0,3,3,1,1,1,1,1,1];
 landed[14] = [0,0,0,3,1,1,1,1,1,1];
 landed[15] = [0,0,3,3,0,1,1,1,0,0];*/
+
+//var _a = new Tet(0);
+//var _b = new TetNode(_a);
+//landed2[13] = [null,new TetNode(new Tet(0)),null,null,null,null,null,null,null,null];
 
 // Returns the color of the Tet in HTML color code string form
 function tetColor (color) {
@@ -92,13 +84,13 @@ window.onload = function() {
 	var c = document.getElementById('canvas').getContext('2d');
 
 	// debug/test with second canvas
-	/*canvas2.width = canvas_width; canvas2.height = 1.6 * canvas_width;
-	var c2 = document.getElementById('canvas2').getContext('2d');*/
+	canvas2.width = canvas_width; canvas2.height = 1.6 * canvas_width;
+	var c2 = document.getElementById('canvas2').getContext('2d');
 
 	function drawCanvas () {
 		//console.log('drawing canvas');
 		c.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
-		//c2.clearRect(0, 0, canvas2.width, canvas2.height); // debug
+		c2.clearRect(0, 0, canvas2.width, canvas2.height); // debug
 		
 		// Draw blocks already landed
 		for (var row = 0; row < landed.length; row++) {
@@ -108,12 +100,34 @@ window.onload = function() {
 					c.fillStyle = tetColor(landed[row][col]);
 					c.fillRect(col * block_s, row * block_s, block_s, block_s);
 				}
-				//debug with second canvas
-				/*if (landedBeforeFloodFill[row][col] != 0) {
-					//draw block position
-					c2.fillStyle = tetColor(landedBeforeFloodFill[row][col]);
-					c2.fillRect(col * block_s, row * block_s, block_s, block_s);
-				}*/
+			}
+		}
+		
+		// Draw blocks already landed2
+		var tetVisited = [], currLandedTetRef, lastLandedTetRef = null;
+		for (var row = 0; row < landed2.length; row++) {
+			for (var col = 0; col < landed2[row].length; col++) {
+				if (landed2[row][col] != null) {
+					currLandedTetRef = landed2[row][col].tetRef;
+					if (currLandedTetRef == lastLandedTetRef) continue;
+					if (tetVisited.indexOf(currLandedTetRef) >= 0) continue;
+					tetVisited.push(currLandedTetRef);
+					c2.beginPath();
+
+					c2.moveTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[0][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[0][1]) * block_s);
+					for (var row = 1; row < currLandedTetRef.perimeter.length; row++) {
+						c2.lineTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[row][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[row][1]) * block_s);
+					}
+					
+					c2.closePath();
+					c2.lineJoin = 'miter';
+					c2.lineWidth = 3;
+					c2.fillStyle = tetColor(currLandedTetRef.type+1);
+					c2.fill();
+					c2.stroke();
+					
+					lastLandedTetRef = currLandedTetRef;
+				}
 			}
 		}
 		
@@ -135,23 +149,24 @@ window.onload = function() {
 					if (currentTet.shape[row][col] != 0) {
 						//draw block position
 						c.fillStyle = tetColor(currentTet.shape[row][col]);
-						//c.fillRect((col + currentTet.topLeft.col) * block_s, (row + currentTet.topLeft.row) * block_s, block_s, block_s);
+						c.fillRect((col + currentTet.topLeft.col) * block_s, (row + currentTet.topLeft.row) * block_s, block_s, block_s);
 					}
 				}
 			}
+			
 			// Draw perimeter in current Tet
-			c.beginPath();
+			c2.beginPath();
 			//console.log(currentTet.perimeter);
-			c.moveTo((currentTet.topLeft.col + currentTet.perimeter[0][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[0][1]) * block_s);
+			c2.moveTo((currentTet.topLeft.col + currentTet.perimeter[0][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[0][1]) * block_s);
 			for (var row = 1; row < currentTet.perimeter.length; row++) {
-				c.lineTo((currentTet.topLeft.col + currentTet.perimeter[row][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[row][1]) * block_s);
+				c2.lineTo((currentTet.topLeft.col + currentTet.perimeter[row][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[row][1]) * block_s);
 			}
-			c.closePath();
-			c.lineJoin = 'miter';
-			c.lineWidth = 3;
-			c.fillStyle = tetColor(currentTet.type+1);
-			c.fill();
-			c.stroke();
+			c2.closePath();
+			c2.lineJoin = 'miter';
+			c2.lineWidth = 3;
+			c2.fillStyle = tetColor(currentTet.type+1);
+			c2.fill();
+			c2.stroke();
 		}
 		
 	}
@@ -236,7 +251,7 @@ window.onload = function() {
 <body>
 <div id="main">
 	<canvas id="canvas"></canvas> 
-	<!--canvas id="canvas2"></canvas-->
+	<canvas id="canvas2"></canvas>
 </div><!--main-->
 </body>
 </html>
