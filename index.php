@@ -1,5 +1,3 @@
-<?php
-?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
@@ -51,9 +49,40 @@ landed[15] = [0,1,0,0,0,1,1,1,0,0];*/
 landed[14] = [0,0,0,3,1,1,1,1,1,1];
 landed[15] = [0,0,3,3,0,1,1,1,0,0];*/
 
-//var _a = new Tet(0);
-//var _b = new TetNode(_a);
-//landed2[13] = [null,new TetNode(new Tet(0)),null,null,null,null,null,null,null,null];
+/*var _a = new Tet(0);
+console.log(_a);
+var arr = [];
+arr[0] = [null,_a,null,null,null,null,null,null,null,null];
+arr[1] = [null,_a,null,null,null,null,null,null,null,null];
+arr[2] = [null,_a,null,null,null,null,null,null,null,null];
+console.log(arr);
+arr.splice(1,1);
+console.log(_a);
+console.log(arr);
+*/
+
+/*var _q = [], _topLeft = { row: 4, col: 7 }, _currShape = [[1],[0,1],[0,1]];
+_q.push({ shape: _currShape, topLeft: _topLeft});
+_currShape = [];
+console.log(_q[0].shape);
+_topLeft = { row: 3, col: 8 }, _currShape = [[1],[1],[1]];
+_q.push({ shape: _currShape, topLeft: _topLeft});
+console.log(_q);*/
+
+/*var _arr = [[0,1,0],[1,1,1]];
+console.log(_arr);
+//_arr[0][2] = null;
+_arr[0].splice(2,1);
+console.log(_arr);*/
+
+
+
+/*var _shape = [[0,0,1]], _topLeft = { row: 4, col: 10 };
+console.log(cleanShape({ shape: _shape, topLeft: _topLeft }));*/
+
+/*var _t = new Tet(1);
+_t.alterShape(0, 0);
+console.log(_t);*/
 
 // Returns the color of the Tet in HTML color code string form
 function tetColor (color) {
@@ -80,11 +109,11 @@ function tetColor (color) {
 
 window.onload = function() {
 	//canvas.style.width = canvas_width + 'px'; canvas.style.height = 2 * canvas_width + 'px';
-	canvas.width = canvas_width; canvas.height = 1.6 * canvas_width;
+	canvas.width = canvas_width; canvas.height = BOARD_ROW_NUM / BOARD_COL_NUM * canvas_width;
 	var c = document.getElementById('canvas').getContext('2d');
 
 	// debug/test with second canvas
-	canvas2.width = canvas_width; canvas2.height = 1.6 * canvas_width;
+	canvas2.width = canvas_width; canvas2.height = BOARD_ROW_NUM / BOARD_COL_NUM * canvas_width;
 	var c2 = document.getElementById('canvas2').getContext('2d');
 
 	function drawCanvas () {
@@ -93,8 +122,8 @@ window.onload = function() {
 		c2.clearRect(0, 0, canvas2.width, canvas2.height); // debug
 		
 		// Draw blocks already landed
-		for (var row = 0; row < landed.length; row++) {
-			for (var col = 0; col < landed[row].length; col++) {
+		for (var row = 0; row < BOARD_ROW_NUM; row++) {
+			for (var col = 0; col < BOARD_COL_NUM; col++) {
 				if (landed[row][col] != 0) {
 					//draw block position
 					c.fillStyle = tetColor(landed[row][col]);
@@ -105,10 +134,10 @@ window.onload = function() {
 		
 		// Draw blocks already landed2
 		var tetVisited = [], currLandedTetRef, lastLandedTetRef = null;
-		for (var row = 0; row < landed2.length; row++) {
-			for (var col = 0; col < landed2[row].length; col++) {
+		for (var row = 0; row < BOARD_ROW_NUM; row++) {
+			for (var col = 0; col < BOARD_COL_NUM; col++) {
 				if (landed2[row][col] != null) {
-					currLandedTetRef = landed2[row][col].tetRef;
+					currLandedTetRef = landed2[row][col];
 					if (currLandedTetRef == lastLandedTetRef) continue;
 					if (tetVisited.indexOf(currLandedTetRef) >= 0) continue;
 					tetVisited.push(currLandedTetRef);

@@ -11,28 +11,26 @@
  * landed Tet:  Tet that has landed and is no longer in control by user.
  */
 
+var BOARD_ROW_NUM = 16, BOARD_COL_NUM = 10;
+
 var canvas_width = 200,
     block_s = canvas_width / 10,
     score = 0,
-    newTet = true;
+    newTet = true,
+		fallingClumps = [];
 
 // Version 1
 // Build our empty landed array
 var landed = [];
-for (var i = 0; i < 16; i++) {
+for (var i = 0; i < BOARD_ROW_NUM; i++) {
 	landed[i] = [0,0,0,0,0,0,0,0,0,0];
 }
 
 // Version 2
 // Build our empty landed array
 var landed2 = [];
-for (var i = 0; i < 16; i++) {
+for (var i = 0; i < BOARD_ROW_NUM; i++) {
 	landed2[i] = [null,null,null,null,null,null,null,null,null,null];
-}
-
-function TetNode (tet, pos) {
-	this.tetRef = tet;
-	this.tetPos = pos;
 }
 
 // Unfortunately needed to clone arrays of arrays
@@ -68,9 +66,8 @@ function Tet (type) {
 	if (type > -1 || type == undefined) {
 		this.topLeft = { row: 0, col: 4 };
 		this.shape = this.getShapeMatrix(0);
-		this.perimeter = this.getPeriMatrix();
-		//console.log(this.perimeter);
-	} else { this.topLeft = {}; this.shape = []; this.perimeter = []; }
+		this.calcPerimeter();
+	}
 }
 /**
  * This function takes in a Tet type and rotation then outputs its shape matrix.
@@ -109,7 +106,7 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 // Upon breaking up a tet, make sure these conditions are met on its new shape:
 // 1) Remove trailing zeros from each row, e.g. [1,0] becomes [1]
 // 2) If new shape is one row, remove leading zeros, e.g. [0,1] becomes [1]
-Tet.prototype.getPeriMatrix = function () {
+Tet.prototype.calcPerimeter = function () {
 	//console.log('calculating perimeter, rot: ' + this.rotation);
 	var periMatrix = [
 		[ [[1]],               [[0,0],[0,1],[1,1],[1,0]] ], // fragments
@@ -171,16 +168,16 @@ Tet.prototype.getPeriMatrix = function () {
 			// if it gets to this point, we found our point array
 			//console.log('found perimeter ' + pRow);
 			//console.log(periMatrix[pRow][1]);
-			return periMatrix[pRow][1];
+			this.perimeter = periMatrix[pRow][1];
+			return;
 		}
 	}
 	//console.log(nShape);
-	return [];
+	this.perimeter = [];
 }
 Tet.prototype.changeShape = function (shape) {
-	this.type = -1;
 	this.shape = shape;
-	this.perimeter = this.getPeriMatrix();
+	this.calcPerimeter();
 }
 Tet.prototype.rotate = function () { // by default, always clockwise
 	//console.log('rotation: ' + this.rotation);
@@ -197,12 +194,12 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 					//console.log('left beyond playing field');
 					return false;
 				}
-				if (col + this.topLeft.col >= landed[0].length) {
+				if (col + this.topLeft.col >= BOARD_COL_NUM) {
 					//this block would be to the right of the playing field
 					//console.log('right beyond playing field');
 					return false;
 				}
-				if (row + this.topLeft.row >= landed.length) {
+				if (row + this.topLeft.row >= BOARD_ROW_NUM) {
 					//this block would be below the playing field
 					//console.log('below playing field');
 					return false;
@@ -217,14 +214,14 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 	}
 	this.rotation = potRot;
 	this.shape = potShape;
-	this.perimeter = this.getPeriMatrix();
+	this.calcPerimeter();
 	return true;
 }
 Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	for (var row = 0; row < this.shape.length; row++) {
 		for (var col = 0; col < this.shape[row].length; col++) {
 			if (this.shape[row][col] != 0) {
-				if (row + potentialTopLeft.row >= landed.length) {
+				if (row + potentialTopLeft.row >= BOARD_ROW_NUM) {
 					//this block would be below the playing field
 					//console.log('below playing field');
 					return true;
@@ -250,7 +247,7 @@ Tet.prototype.checkSideCollision = function (potentialTopLeft) {
 					//console.log('left beyond playing field');
 					return true;
 				}
-				if (col + potentialTopLeft.col >= landed[0].length) {
+				if (col + potentialTopLeft.col >= BOARD_COL_NUM) {
 					//this block would be to the right of the playing field
 					//console.log('right beyond playing field');
 					return true;
@@ -283,7 +280,7 @@ Tet.prototype.moveDown = function () {
 			for (var col = 0; col < this.shape[row].length; col++) {
 				if (this.shape[row][col] != 0) {
 					landed[row + this.topLeft.row][col + this.topLeft.col] = this.shape[row][col];
-					landed2[row + this.topLeft.row][col + this.topLeft.col] = new TetNode(this,null);
+					landed2[row + this.topLeft.row][col + this.topLeft.col] = this;
 				}
 			}
 		}
@@ -343,9 +340,9 @@ Tet.prototype.collided = function () {
 	if (this.type >= 0) newTet = true;
 	//console.log('tet down collision!');
 	var isFilled, lastRowRemoved = -1;
-	for (var row = this.topLeft.row; row < landed.length; row++) {
+	for (var row = this.topLeft.row; row < BOARD_ROW_NUM; row++) {
 		isFilled = true;
-		for (var col = 0; col < landed[row].length; col++) {
+		for (var col = 0; col < BOARD_COL_NUM; col++) {
 			if (landed[row][col] == 0)
 				isFilled = false;
 		}
@@ -360,7 +357,7 @@ Tet.prototype.collided = function () {
 	if (lastRowRemoved >= 0 && this.type >= 0) {
 		//calculate clumps along lastRowRemoved and above
 		var clumps = [], q, n, c, colorFound = -1, colorNow = -1, i;
-		for (var col = 0; col < landed[lastRowRemoved].length; col++) {
+		for (var col = 0; col < BOARD_COL_NUM; col++) {
 			q = [], colorFound = landed[lastRowRemoved][col], i = 0;
 			q.push(new ClumpNode(lastRowRemoved, col, colorFound));
 			c = new Clump(lastRowRemoved, col);
@@ -398,9 +395,9 @@ Tet.prototype.collided2 = function () {
 	//if (this.type >= 0) newTet = true; // uncommented/unable this line once v1 collided() is removed
 	//console.log('tet down collision!');
 	var isFilled, lastRowRemoved = -1;
-	for (var row = this.topLeft.row; row < landed2.length; row++) {
+	for (var row = this.topLeft.row; row < BOARD_ROW_NUM; row++) {
 		isFilled = true;
-		for (var col = 0; col < landed2[row].length; col++) {
+		for (var col = 0; col < BOARD_COL_NUM; col++) {
 			if (landed2[row][col] == null)
 				isFilled = false;
 		}
@@ -412,40 +409,73 @@ Tet.prototype.collided2 = function () {
 			console.log('score:' + score);
 		}
 	}
-	/*if (lastRowRemoved >= 0 && this.type >= 0) {
-		//calculate clumps along lastRowRemoved and above
-		var clumps = [], q, n, c, colorFound = -1, colorNow = -1, i;
-		for (var col = 0; col < landed2[lastRowRemoved].length; col++) {
-			q = [], colorFound = landed2[lastRowRemoved][col], i = 0;
-			q.push(new ClumpNode(lastRowRemoved, col, colorFound));
-			c = new Clump(lastRowRemoved, col);
-			while (q.length > 0 && i < 1000) {
-				n = q.shift();
-				colorNow = landed2[n.row][n.col];
-				if (colorNow == colorFound && colorNow > 0) {
-					//console.log('i:'+col+' row:'+n.row+' col:'+n.col+' val:'+colorNow);
-					c.addNode(n);
-					landed2[n.row][n.col] = 0;
-					if (n.col > 0) q.push(new ClumpNode(n.row, n.col - 1, colorNow));
-					if (n.col < 15) q.push(new ClumpNode(n.row, n.col + 1, colorNow));
-					if (n.row > 0) q.push(new ClumpNode(n.row - 1, n.col, colorNow));
-					if (n.row < 15) q.push(new ClumpNode(n.row + 1, n.col, colorNow));
-				}
-				i++;
-			}
-			//console.log(c.size());
-			if (c.size() > 0) clumps.push(c);
-		}
-		//console.log(clumps);
-		//clumps[0].computeShape();
-		for (var i = 0; i < clumps.length; i++) {
-			var tmp = new Tet();
-			tmp.shape = clumps[i].computeShape();
-			tmp.topLeft = clumps[i].topLeft;
-			//console.log(tmp.topLeft);
-			tmp.type = -1;
-			while (tmp.moveDown()) {}
-		}
-	}*/
 	return false;
+}
+Tet.prototype.alterShape = function (row, col) {
+	if (this.shape[row - this.topLeft.row][col - this.topLeft.col] === 0){
+		console.log('alterShape() exception: row: '+row+' col: '+col+' already zero of shape: '+this.shape+' in Tet:');
+		console.log(this);
+	}
+	this.shape[row - this.topLeft.row][col - this.topLeft.col] = 0;
+}
+Tet.prototype.cleanShape = function (o) {
+	var shape = o.shape, topLeft = o.topLeft, done = false;
+	while (true) {
+		for (var row = 0; row < shape.length; row++)
+			if (shape[row][0] > 0) {
+				done = true;
+				break;
+			}
+		if (done) break;
+		for (var row = 0; row < shape.length; row++)
+			shape[row].splice(0,1);
+		topLeft.col += 1;
+	}
+	for (var row = 0; row < shape.length; row++) {
+		for (var col = shape[row].length - 1; col >= 0; col--) {
+			if (shape[row][col] === 0) {
+				shape[row].splice(col,1);
+				continue;
+			}
+			break;
+		}
+	}
+	return { shape: shape, topLeft: topLeft };
+}
+Array.prototype.allZeros = function () {
+	for (var col = 0; col < this.length; col++)
+		if (this[col] > 0) return false;
+	return true;
+}
+Tet.prototype.update = function () {
+	var currShape = [], topLeft = this.topLeft, q = [];
+	for (var row = 0; row < shape.length; row++) {
+		if (shape[row].allZeros()) {
+			if (currShape.length === 0) {
+				topLeft.row += 1;
+				continue;
+			}
+			q.push({ shape: currShape, topLeft: topLeft });
+			currShape = [];
+		}
+	}
+	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
+	//if (q.length === 0) this.type = null;
+	for (var qs = 0; qs < q.length; qs++) {
+		var tmp = this.cleanShape(q[qs]);
+		if (qs === 0) {
+			this.shape = tmp.shape;
+			this.topLeft = tmp.topLeft;
+			this.calcPerimeter();
+			fallingClumps.push(this);
+		}
+		else {
+			var newTet = new Tet(-1);
+			newTet.type = this.type;
+			newTet.shape = tmp.shape;
+			newTet.topLeft = tmp.topLeft;
+			newTet.perimeter = newTet.calcPerimeter();
+			fallingClumps.push(newTet);
+		}
+	}
 }
