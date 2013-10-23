@@ -19,22 +19,20 @@ var canvas_width = 200,
     newTet = true,
 		fallingClumps = [];
 
-// Version 1
+// Version 2
 // Build our empty landed array
 var landed = [];
 for (var i = 0; i < BOARD_ROW_NUM; i++) {
-	landed[i] = [0,0,0,0,0,0,0,0,0,0];
+	landed[i] = [null,null,null,null,null,null,null,null,null,null];
 }
 
-// Version 2
-// Build our empty landed array
-var landed2 = [];
-for (var i = 0; i < BOARD_ROW_NUM; i++) {
-	landed2[i] = [null,null,null,null,null,null,null,null,null,null];
+function TetNode (tet, pos) {
+	this.ref = tet;
+	this.pos = pos;
 }
 
 // Unfortunately needed to clone arrays of arrays
-Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
+/*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
 	var newObj = (this instanceof Array) ? [] : {};
 	for (i in this) {
 		if (i == 'clone') continue;
@@ -42,7 +40,7 @@ Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/sho
 			newObj[i] = this[i].clone();
 		} else newObj[i] = this[i]
 	} return newObj;
-}
+}*/
 
 /**
  * This function creates a Tet class intended to be instantiated by "new Tet()".
@@ -83,12 +81,12 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 	// Note that the numbers in these arrays denote their eventual color
 	var matrixMatrix = [
 		[ [[1,1,1,1]], [[1],[1],[1],[1]] ], // I
-		[ [[2,2,2],[0,0,2]], [[0,2],[0,2],[2,2]], [[2    ],[2,2,2]], [[2,2],[2  ],[2  ]] ], // J
-		[ [[3,3,3],[3    ]], [[3,3],[0,3],[0,3]], [[0,0,3],[3,3,3]], [[3  ],[3  ],[3,3]] ], // L
-		[ [[4,4],[4,4]] ], // O
-		[ [[0,5,5],[5,5  ]], [[5  ],[5,5],[0,5]] ], // S
-		[ [[6,6,6],[0,6  ]], [[0,6],[6,6],[0,6]], [[0,6  ],[6,6,6]], [[6  ],[6,6],[6  ]] ], // T
-		[ [[7,7  ],[0,7,7]], [[0,7],[7,7],[7  ]] ], // Z
+		[ [[1,1,1],[0,0,1]], [[0,1],[0,1],[1,1]], [[1    ],[1,1,1]], [[1,1],[1  ],[1  ]] ], // J
+		[ [[1,1,1],[1    ]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]], [[1  ],[1  ],[1,1]] ], // L
+		[ [[1,1],[1,1]] ], // O
+		[ [[0,1,1],[1,1  ]], [[1  ],[1,1],[0,1]] ], // S
+		[ [[1,1,1],[0,1  ]], [[0,1],[1,1],[0,1]], [[0,1  ],[1,1,1]], [[1  ],[1,1],[1  ]] ], // T
+		[ [[1,1  ],[0,1,1]], [[0,1],[1,1],[1  ]] ], // Z
 	], m = matrixMatrix[this.type];
 	switch (m.length) {
 		case 1:
@@ -137,27 +135,21 @@ Tet.prototype.calcPerimeter = function () {
 		[ [[1  ],[1,1],[1  ]], [[0,0],[0,3],[1,3],[1,2],[2,2],[2,1],[1,1],[1,0]] ],
 		[ [[1,1  ],[0,1,1]],   [[0,0],[0,1],[1,1],[1,2],[3,2],[3,1],[2,1],[2,0]] ], // Z
 		[ [[0,1],[1,1],[1  ]], [[1,0],[1,1],[0,1],[0,3],[1,3],[1,2],[2,2],[2,0]] ]
-	], nShape = this.shape.clone(), checkNextShape;
-	// Normalize our shape so that every 
-	for (var row = 0; row < nShape.length; row++) {
-		for (var col = 0; col < nShape[row].length; col++) {
-			if (nShape[row][col] > 0) nShape[row][col] = 1;
-		}
-	}
+	], checkNextShape;
 	for (var pRow = 0; pRow < periMatrix.length; pRow++) {
 		checkNextShape = false;
-		for (var row = 0; row < nShape.length; row++) {
-			if (nShape.length != periMatrix[pRow][0].length) {
+		for (var row = 0; row < this.shape.length; row++) {
+			if (this.shape.length != periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
 			}
 			if (checkNextShape) break;
-			for (var col = 0; col < nShape[row].length; col++) {
-				if (nShape[row].length != periMatrix[pRow][0][row].length) {
+			for (var col = 0; col < this.shape[row].length; col++) {
+				if (this.shape[row].length != periMatrix[pRow][0][row].length) {
 					checkNextShape = true;
 					break;
 				}
-				if (nShape[row][col] == periMatrix[pRow][0][row][col]) {
+				if (this.shape[row][col] == periMatrix[pRow][0][row][col]) {
 					continue;
 				}
 				checkNextShape = true;
@@ -172,7 +164,7 @@ Tet.prototype.calcPerimeter = function () {
 			return;
 		}
 	}
-	//console.log(nShape);
+	//console.log(this.shape);
 	this.perimeter = [];
 }
 Tet.prototype.changeShape = function (shape) {
@@ -204,7 +196,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 					//console.log('below playing field');
 					return false;
 				}
-				if (landed[row + this.topLeft.row][col + this.topLeft.col] != 0) {
+				if (landed[row + this.topLeft.row][col + this.topLeft.col] != null) {
 					//the space is taken
 					//console.log('rotate: space is taken');
 					return false;
@@ -226,7 +218,7 @@ Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 					//console.log('below playing field');
 					return true;
 				}
-				else if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != 0) {
+				else if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != null) {
 					//console.log(landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
 					//console.log('bot: space taken');
 					//console.log(potentialTopLeft);
@@ -252,7 +244,7 @@ Tet.prototype.checkSideCollision = function (potentialTopLeft) {
 					//console.log('right beyond playing field');
 					return true;
 				}
-				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != 0) {
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != null) {
 					//console.log('side: space taken');
 					//the space is taken
 					return true;
@@ -279,131 +271,27 @@ Tet.prototype.moveDown = function () {
 		for (var row = 0; row < this.shape.length; row++) {
 			for (var col = 0; col < this.shape[row].length; col++) {
 				if (this.shape[row][col] != 0) {
-					landed[row + this.topLeft.row][col + this.topLeft.col] = this.shape[row][col];
-					landed2[row + this.topLeft.row][col + this.topLeft.col] = this;
+					landed[row + this.topLeft.row][col + this.topLeft.col] = new TetNode(this, { row: row + this.topLeft.row, col: col + this.topLeft.col } );
 				}
 			}
 		}
-		var ret = this.collided();
-		this.collided2();
-		return ret;
+		return this.collided();
 	}
 	return true;
 }
-function ClumpNode (row, col, val) {
-	this.row = row;
-	this.col = col;
-	this.val = val;
-}
-function Clump (row, col) {
-	this.row = row; // row and col is the position where this clump starts on the lastRowRemoved
-	this.col = col;
-	this.topLeft = { row: 0, col: 0 };
-	this.matrix = [];
-}
-Clump.prototype.addNode = function (node) {
-		this.matrix.push(node);
-}
-Clump.prototype.computeShape = function () {
-	var rowMin = 15, colMin = 9, rowMax = 0, colMax = 0, shape = [];
-	for (var i = 0; i < this.matrix.length; i++) {
-		if (this.matrix[i].row < rowMin) rowMin = this.matrix[i].row;
-		if (this.matrix[i].col < colMin) colMin = this.matrix[i].col;
-	}
-	for (var i = 0; i < this.matrix.length; i++) {
-		this.matrix[i].row = this.matrix[i].row - rowMin;
-		if (this.matrix[i].row > rowMax) rowMax = this.matrix[i].row;
-		this.matrix[i].col = this.matrix[i].col - colMin;
-		if (this.matrix[i].col > colMax) colMax = this.matrix[i].col;
-	}
-	for (var row = 0; row <= rowMax; row++) {
-		var tmp = [];
-		for (var col = 0; col <= colMax; col++) {
-			tmp.push(0);
-		}
-		shape.push(tmp);
-	}
-	for (var i = 0; i < this.matrix.length; i++) {
-		shape[this.matrix[i].row][this.matrix[i].col] = this.matrix[i].val;
-	}
-	
-	//console.log(this.matrix);
-	//console.log(shape);
-	this.topLeft.row = rowMin;
-	this.topLeft.col = colMin;
-	return shape;
-}
-Clump.prototype.size = function () {
-	return this.matrix.length;
-}
 Tet.prototype.collided = function () {
-	if (this.type >= 0) newTet = true;
+	if (this.type >= 0) newTet = true; // uncommented/unable this line once v1 collided() is removed
 	//console.log('tet down collision!');
 	var isFilled, lastRowRemoved = -1;
 	for (var row = this.topLeft.row; row < BOARD_ROW_NUM; row++) {
 		isFilled = true;
 		for (var col = 0; col < BOARD_COL_NUM; col++) {
-			if (landed[row][col] == 0)
+			if (landed[row][col] == null)
 				isFilled = false;
 		}
 		if (isFilled) {
 			landed.splice(row, 1);
-			landed.unshift([0,0,0,0,0,0,0,0,0,0]);
-			lastRowRemoved = row;
-			score++;
-			console.log('score:' + score);
-		}
-	}
-	if (lastRowRemoved >= 0 && this.type >= 0) {
-		//calculate clumps along lastRowRemoved and above
-		var clumps = [], q, n, c, colorFound = -1, colorNow = -1, i;
-		for (var col = 0; col < BOARD_COL_NUM; col++) {
-			q = [], colorFound = landed[lastRowRemoved][col], i = 0;
-			q.push(new ClumpNode(lastRowRemoved, col, colorFound));
-			c = new Clump(lastRowRemoved, col);
-			while (q.length > 0 && i < 1000) {
-				n = q.shift();
-				colorNow = landed[n.row][n.col];
-				if (colorNow == colorFound && colorNow > 0) {
-					//console.log('i:'+col+' row:'+n.row+' col:'+n.col+' val:'+colorNow);
-					c.addNode(n);
-					landed[n.row][n.col] = 0;
-					if (n.col > 0) q.push(new ClumpNode(n.row, n.col - 1, colorNow));
-					if (n.col < 15) q.push(new ClumpNode(n.row, n.col + 1, colorNow));
-					if (n.row > 0) q.push(new ClumpNode(n.row - 1, n.col, colorNow));
-					if (n.row < 15) q.push(new ClumpNode(n.row + 1, n.col, colorNow));
-				}
-				i++;
-			}
-			//console.log(c.size());
-			if (c.size() > 0) clumps.push(c);
-		}
-		//console.log(clumps);
-		//clumps[0].computeShape();
-		for (var i = 0; i < clumps.length; i++) {
-			var tmp = new Tet();
-			tmp.shape = clumps[i].computeShape();
-			tmp.topLeft = clumps[i].topLeft;
-			//console.log(tmp.topLeft);
-			tmp.type = -1;
-			while (tmp.moveDown()) {}
-		}
-	}
-	return false;
-}
-Tet.prototype.collided2 = function () {
-	//if (this.type >= 0) newTet = true; // uncommented/unable this line once v1 collided() is removed
-	//console.log('tet down collision!');
-	var isFilled, lastRowRemoved = -1;
-	for (var row = this.topLeft.row; row < BOARD_ROW_NUM; row++) {
-		isFilled = true;
-		for (var col = 0; col < BOARD_COL_NUM; col++) {
-			if (landed2[row][col] == null)
-				isFilled = false;
-		}
-		if (isFilled) {
-			landed2.splice(row, 1);
-			landed2.unshift([null,null,null,null,null,null,null,null,null,null]);
+			landed.unshift([null,null,null,null,null,null,null,null,null,null]);
 			lastRowRemoved = row;
 			score++;
 			console.log('score:' + score);
@@ -460,22 +348,14 @@ Tet.prototype.update = function () {
 		}
 	}
 	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
-	//if (q.length === 0) this.type = null;
+	this.type = -1;
 	for (var qs = 0; qs < q.length; qs++) {
 		var tmp = this.cleanShape(q[qs]);
-		if (qs === 0) {
-			this.shape = tmp.shape;
-			this.topLeft = tmp.topLeft;
-			this.calcPerimeter();
-			fallingClumps.push(this);
-		}
-		else {
-			var newTet = new Tet(-1);
-			newTet.type = this.type;
-			newTet.shape = tmp.shape;
-			newTet.topLeft = tmp.topLeft;
-			newTet.perimeter = newTet.calcPerimeter();
-			fallingClumps.push(newTet);
-		}
+		var newTet = new Tet(-1);
+		newTet.type = this.type;
+		newTet.shape = tmp.shape;
+		newTet.topLeft = tmp.topLeft;
+		newTet.perimeter = newTet.calcPerimeter();
+		fallingClumps.push(newTet);
 	}
 }

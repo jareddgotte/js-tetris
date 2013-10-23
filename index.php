@@ -30,79 +30,26 @@ var loop,
 
 // debug variables
 var dropOnce = false;
-/*currentTet = new Tet(2);
-//currentTet.topLeft = { row: 0, col: 7 };
-//currentTet.shape = [[0,0,3],[3,3,3]];
-currentTet.topLeft = { row: 0, col: 1 };
-currentTet.shape = [[2,2],[2],[2]];
-newTet = false;*/
-/*landed[12] = [3,0,0,3,3,0,0,0,0,0];
-landed[13] = [3,0,0,3,3,0,0,0,0,0];
-landed[14] = [1,1,1,1,1,1,1,0,0,0];
-landed[15] = [0,1,1,0,0,1,1,1,0,0];*/
-/*landed[11] = [0,3,3,3,3,0,0,0,0,0];
-landed[12] = [0,0,3,0,3,0,0,0,0,0];
-landed[13] = [0,0,3,0,3,0,0,0,0,0];
-landed[14] = [1,1,1,1,1,1,1,0,0,0];
-landed[15] = [0,1,0,0,0,1,1,1,0,0];*/
-/*landed[13] = [2,0,3,3,1,1,1,1,1,1];
-landed[14] = [0,0,0,3,1,1,1,1,1,1];
-landed[15] = [0,0,3,3,0,1,1,1,0,0];*/
-
-/*var _a = new Tet(0);
-console.log(_a);
-var arr = [];
-arr[0] = [null,_a,null,null,null,null,null,null,null,null];
-arr[1] = [null,_a,null,null,null,null,null,null,null,null];
-arr[2] = [null,_a,null,null,null,null,null,null,null,null];
-console.log(arr);
-arr.splice(1,1);
-console.log(_a);
-console.log(arr);
-*/
-
-/*var _q = [], _topLeft = { row: 4, col: 7 }, _currShape = [[1],[0,1],[0,1]];
-_q.push({ shape: _currShape, topLeft: _topLeft});
-_currShape = [];
-console.log(_q[0].shape);
-_topLeft = { row: 3, col: 8 }, _currShape = [[1],[1],[1]];
-_q.push({ shape: _currShape, topLeft: _topLeft});
-console.log(_q);*/
-
-/*var _arr = [[0,1,0],[1,1,1]];
-console.log(_arr);
-//_arr[0][2] = null;
-_arr[0].splice(2,1);
-console.log(_arr);*/
-
-
-
-/*var _shape = [[0,0,1]], _topLeft = { row: 4, col: 10 };
-console.log(cleanShape({ shape: _shape, topLeft: _topLeft }));*/
-
-/*var _t = new Tet(1);
-_t.alterShape(0, 0);
-console.log(_t);*/
 
 // Returns the color of the Tet in HTML color code string form
-function tetColor (color) {
-	switch (color) { // Colors from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
-		case 1: // Cyan
+function tetColor (type) {
+	switch (type) { // Colors from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
+		case 0: // Cyan
 			return '#3cc'; //0ff
-		case 2: // Blue
+		case 1: // Blue
 			return '#0af';
-		case 3: // Orange
+		case 2: // Orange
 			return '#f90';
-		case 4: // Yellow
+		case 3: // Yellow
 			return '#ee0';
-		case 5: // Green
+		case 4: // Green
 			return '#0c0'; // 0f0
-		case 6: // Purple
+		case 5: // Purple
 			return '#c0c';
-		case 7: // Red
+		case 6: // Red
 			return '#c00';
 		default: // Black
-			console.log('unexpected color: ' + color);
+			console.log('unexpected type (for color): ' + type);
 			return '#fff';
 	}
 }
@@ -112,48 +59,35 @@ window.onload = function() {
 	canvas.width = canvas_width; canvas.height = BOARD_ROW_NUM / BOARD_COL_NUM * canvas_width;
 	var c = document.getElementById('canvas').getContext('2d');
 
-	// debug/test with second canvas
-	canvas2.width = canvas_width; canvas2.height = BOARD_ROW_NUM / BOARD_COL_NUM * canvas_width;
-	var c2 = document.getElementById('canvas2').getContext('2d');
-
 	function drawCanvas () {
 		//console.log('drawing canvas');
 		c.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
-		c2.clearRect(0, 0, canvas2.width, canvas2.height); // debug
 		
 		// Draw blocks already landed
-		for (var row = 0; row < BOARD_ROW_NUM; row++) {
-			for (var col = 0; col < BOARD_COL_NUM; col++) {
-				if (landed[row][col] != 0) {
-					//draw block position
-					c.fillStyle = tetColor(landed[row][col]);
-					c.fillRect(col * block_s, row * block_s, block_s, block_s);
-				}
-			}
-		}
-		
-		// Draw blocks already landed2
 		var tetVisited = [], currLandedTetRef, lastLandedTetRef = null;
 		for (var row = 0; row < BOARD_ROW_NUM; row++) {
 			for (var col = 0; col < BOARD_COL_NUM; col++) {
-				if (landed2[row][col] != null) {
-					currLandedTetRef = landed2[row][col];
+				if (landed[row][col] != null) {
+					currLandedTetRef = landed[row][col].ref;
 					if (currLandedTetRef == lastLandedTetRef) continue;
 					if (tetVisited.indexOf(currLandedTetRef) >= 0) continue;
+					if (currLandedTetRef.type === -1) { landed[row][col] = null; continue; } // found a zombie Tet and removing it
 					tetVisited.push(currLandedTetRef);
-					c2.beginPath();
+					//console.log(landed);
+					//console.log(landed[row][col].pos);
+					c.beginPath();
 
-					c2.moveTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[0][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[0][1]) * block_s);
+					c.moveTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[0][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[0][1]) * block_s);
 					for (var row = 1; row < currLandedTetRef.perimeter.length; row++) {
-						c2.lineTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[row][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[row][1]) * block_s);
+						c.lineTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[row][0]) * block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[row][1]) * block_s);
 					}
 					
-					c2.closePath();
-					c2.lineJoin = 'miter';
-					c2.lineWidth = 3;
-					c2.fillStyle = tetColor(currLandedTetRef.type+1);
-					c2.fill();
-					c2.stroke();
+					c.closePath();
+					c.lineJoin = 'miter';
+					c.lineWidth = 3;
+					c.fillStyle = tetColor(currLandedTetRef.type);
+					c.fill();
+					c.stroke();
 					
 					lastLandedTetRef = currLandedTetRef;
 				}
@@ -173,31 +107,20 @@ window.onload = function() {
 
 	// Draw blocks in current Tet
 		if (!newTet) {
-			for (var row = 0; row < currentTet.shape.length; row++) {
-				for (var col = 0; col < currentTet.shape[row].length; col++) {
-					if (currentTet.shape[row][col] != 0) {
-						//draw block position
-						c.fillStyle = tetColor(currentTet.shape[row][col]);
-						c.fillRect((col + currentTet.topLeft.col) * block_s, (row + currentTet.topLeft.row) * block_s, block_s, block_s);
-					}
-				}
-			}
-			
 			// Draw perimeter in current Tet
-			c2.beginPath();
+			c.beginPath();
 			//console.log(currentTet.perimeter);
-			c2.moveTo((currentTet.topLeft.col + currentTet.perimeter[0][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[0][1]) * block_s);
+			c.moveTo((currentTet.topLeft.col + currentTet.perimeter[0][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[0][1]) * block_s);
 			for (var row = 1; row < currentTet.perimeter.length; row++) {
-				c2.lineTo((currentTet.topLeft.col + currentTet.perimeter[row][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[row][1]) * block_s);
+				c.lineTo((currentTet.topLeft.col + currentTet.perimeter[row][0]) * block_s, (currentTet.topLeft.row + currentTet.perimeter[row][1]) * block_s);
 			}
-			c2.closePath();
-			c2.lineJoin = 'miter';
-			c2.lineWidth = 3;
-			c2.fillStyle = tetColor(currentTet.type+1);
-			c2.fill();
-			c2.stroke();
+			c.closePath();
+			c.lineJoin = 'miter';
+			c.lineWidth = 3;
+			c.fillStyle = tetColor(currentTet.type);
+			c.fill();
+			c.stroke();
 		}
-		
 	}
 	
 	function createTet() {
@@ -280,7 +203,6 @@ window.onload = function() {
 <body>
 <div id="main">
 	<canvas id="canvas"></canvas> 
-	<canvas id="canvas2"></canvas>
 </div><!--main-->
 </body>
 </html>
