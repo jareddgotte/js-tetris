@@ -2,16 +2,17 @@
 <html>
 <head>
 
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<meta name="keywords" content="">
-<meta name="description" content="">
+<meta name="description" content="A Tetris game made explicitly with HTML5, JavaScript, and without jQuery and other JS libraries.">
+<meta name="keywords" content="HTML5,CSS,JavaScript,Tetris,Game">
+<meta name="author" content="Jared Gotte">
+<meta charset="UTF-8">
 <title>Tetris</title>
 
-<link rel="stylesheet" type="text/css" href="css/reset.css">
-<link rel="stylesheet" type="text/css" href="css/main.css">
+<link rel="stylesheet" href="css/reset.css">
+<link rel="stylesheet" href="css/main.css">
 
-<script type="text/javascript" src="js/Tet.js"></script>
-<script type="text/javascript">
+<script src="js/Tetris.js"></script>
+<script>
 //<![CDATA[
 
 // The collision detection is mostly inspired from the article: http://gamedev.tutsplus.com/tutorials/implementation/implementing-tetris-collision-detection/ (by Michael James Williams on Oct 6th 2012)
@@ -25,14 +26,12 @@ window.onload = function() {
 
 //]]>
 </script>
-<style type="text/css">
-<!--
+<style>
 #canvas {
 	border: 1px solid black;
 	margin: 0 auto;
 	display: block;
 }
--->
 </style>
 </head>
 <body>

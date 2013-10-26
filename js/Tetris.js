@@ -84,35 +84,16 @@ function Game (canvas_id) {
 	}		
 }
 Game.prototype.draw = function () {
-	// Returns the color of the Tet in HTML color code string form
-	function tetColor (type) {
-		switch (type) { // Colors from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
-			case 0: // I
-				return '#3cc'; // Cyan
-			case 1: // J
-				return '#0af'; // Blue
-			case 2: // L
-				return '#f90'; // Orange
-			case 3: // O
-				return '#ee0'; // Yellow
-			case 4: // S
-				return '#0c0'; // Green
-			case 5: // T
-				return '#c0c'; // Purple
-			case 6: // Z
-				return '#c00'; // Red
-			default:
-				console.log('unexpected type (for color): ' + type);
-				return '#fff'; // Black
-		}
-	}
+	//console.log('drawing canvas');
+
+	// Keys respectively reflect the HTML color code of Tets: I, J, L, O, S, T, Z
+	var tetColor = ['#3cc','#0af','#f90','#ee0','#0c0','#c0c','#c00'];
 
 	var c = this.canvas.getContext('2d');
-	//console.log('drawing canvas');
 	c.clearRect(0, 0, this.canvas.width, this.canvas.height); // clear canvas
 	
 	// Draw blocks already landed
-	for (var row = 0, tetVisited = [], currLandedTetRef, lastLandedTetRef = null; row < this.BOARD_ROW_NUM; row++) {
+	for (var row = 0, tetVisited = [], currLandedTetRef, lastLandedTetRef = null;  row < this.BOARD_ROW_NUM;  row++) {
 		for (var col = 0; col < this.BOARD_COL_NUM; col++) {
 			if (this.landed[row][col] != null) {
 				currLandedTetRef = this.landed[row][col].ref;
@@ -125,14 +106,14 @@ Game.prototype.draw = function () {
 				c.beginPath();
 
 				c.moveTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[0][0]) * this.block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[0][1]) * this.block_s);
-				for (var row = 1, len = currLandedTetRef.perimeter.length; row < len; row++) {
+				for (var row = 1, len = currLandedTetRef.perimeter.length;  row < len;  row++) {
 					c.lineTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[row][0]) * this.block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[row][1]) * this.block_s);
 				}
 				
 				c.closePath();
 				c.lineJoin = 'miter';
 				c.lineWidth = 3;
-				c.fillStyle = tetColor(currLandedTetRef.type);
+				c.fillStyle = tetColor[currLandedTetRef.type];
 				c.fill();
 				c.stroke();
 				
@@ -147,13 +128,13 @@ Game.prototype.draw = function () {
 		c.beginPath();
 		//console.log(this.currentTet.perimeter);
 		c.moveTo((this.currentTet.topLeft.col + this.currentTet.perimeter[0][0]) * this.block_s, (this.currentTet.topLeft.row + this.currentTet.perimeter[0][1]) * this.block_s);
-		for (var row = 1, len = this.currentTet.perimeter.length; row < len; row++) {
+		for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
 			c.lineTo((this.currentTet.topLeft.col + this.currentTet.perimeter[row][0]) * this.block_s, (this.currentTet.topLeft.row + this.currentTet.perimeter[row][1]) * this.block_s);
 		}
 		c.closePath();
 		c.lineJoin = 'miter';
 		c.lineWidth = 3;
-		c.fillStyle = tetColor(this.currentTet.type);
+		c.fillStyle = tetColor[this.currentTet.type];
 		c.fill();
 		c.stroke();
 	}
@@ -183,7 +164,6 @@ function TetNode (tet, pos) {
 	this.pos = pos;
 }
 
-
 // Needed to clone arrays of arrays
 /*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
 	var newObj = (this instanceof Array) ? [] : {};
@@ -206,7 +186,7 @@ function TetNode (tet, pos) {
  * @property {Object} topLeft This is the (row, column) position the Tet is in with respect to the game board (16 rows by 10 columns); (0, 0) being the most top left position.
  * @property {Number} topLeft.row Row position of Tet on board.
  * @property {Number} topLeft.col Column position of Tet on board.
- * @property {Array[Array[Number]]} shape Shape of Tet, e.g. _shape = [[1,1,1,1]] is horizontal I Tetrimino where [[1],[1],[1],[1]] is vertical I Tet.  Number in range [1..7] determines color (found from tetColor() in index.php). Number of 0 indicates empty space.
+ * @property {Array[Array[Number]]} shape Shape of Tet, e.g. _shape = [[1,1,1,1]] is horizontal I Tetrimino where [[1],[1],[1],[1]] is vertical I Tet.  Number in range [1..7] determines color (found from tetColor in draw()). Number of 0 indicates empty space.
  * @property {Array[Array[Number]]} perimeter Perimeter of Tet, e.g. _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet.  Imagine Tetriminos being expressed as 4 "blocks," each block's side would be _s pixels in magnitude, where _s is the variable block_s defined in index.php.  Therefore, we can determine its perimeter by taking the "(x, y) coordinates" in each "row" of _perimeter, and multiplying each x and y value by _s.
  */
 function Tet (game, type) {
@@ -292,9 +272,9 @@ Tet.prototype.calcPerimeter = function () {
 		[ [[1,1  ],[0,1,1]],   [[0,0],[0,1],[1,1],[1,2],[3,2],[3,1],[2,1],[2,0]] ], // Z
 		[ [[0,1],[1,1],[1  ]], [[1,0],[1,1],[0,1],[0,3],[1,3],[1,2],[2,2],[2,0]] ]
 	], checkNextShape;
-	for (var pRow = 0, pLen = periMatrix.length; pRow < pLen; pRow++) {
+	for (var pRow = 0, pLen = periMatrix.length;  pRow < pLen;  pRow++) {
 		checkNextShape = false;
-		for (var row = 0, len = this.shape.length; row < len; row++) {
+		for (var row = 0, len = this.shape.length;  row < len;  row++) {
 			if (len != periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
@@ -334,7 +314,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 	else potRot = this.rotation + 1;
 	var potShape = this.getShapeMatrix(potRot);
 	// check for potential collisions
-	for (var row = 0, len = potShape.length; row < len; row++) {
+	for (var row = 0, len = potShape.length;  row < len;  row++) {
 		for (var col = 0; col < potShape[row].length; col++) {
 			if (potShape[row][col] != 0) {
 				if (col + this.topLeft.col < 0) {
@@ -366,7 +346,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 	return true;
 }
 Tet.prototype.checkBotCollision = function (potentialTopLeft) {
-	for (var row = 0, len = this.shape.length; row < len; row++) {
+	for (var row = 0, len = this.shape.length;  row < len;  row++) {
 		for (var col = 0; col < this.shape[row].length; col++) {
 			if (this.shape[row][col] != 0) {
 				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
@@ -387,7 +367,7 @@ Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	return false;
 }
 Tet.prototype.checkSideCollision = function (potentialTopLeft) {
-	for (var row = 0, len = this.shape.length; row < len; row++) {
+	for (var row = 0, len = this.shape.length;  row < len;  row++) {
 		for (var col = 0; col < this.shape[row].length; col++) {
 			if (this.shape[row][col] != 0) {
 				if (col + potentialTopLeft.col < 0) {
@@ -424,7 +404,7 @@ Tet.prototype.moveDown = function () {
 	//console.log(potentialTopLeft);
 	if (!this.checkBotCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 	else {
-		for (var row = 0, len = this.shape.length; row < len; row++) {
+		for (var row = 0, len = this.shape.length;  row < len;  row++) {
 			for (var col = 0; col < this.shape[row].length; col++) {
 				if (this.shape[row][col] != 0) {
 					this.game.landed[row + this.topLeft.row][col + this.topLeft.col] = new TetNode(this, { row: row + this.topLeft.row, col: col + this.topLeft.col } );
@@ -465,17 +445,17 @@ Tet.prototype.alterShape = function (row, col) {
 Tet.prototype.cleanShape = function (o) {
 	var shape = o.shape, topLeft = o.topLeft, done = false;
 	while (true) {
-		for (var row = 0, len = shape.length; row < len; row++)
+		for (var row = 0, len = shape.length;  row < len;  row++)
 			if (shape[row][0] > 0) {
 				done = true;
 				break;
 			}
 		if (done) break;
-		for (var row = 0, len = shape.length; row < len; row++)
+		for (var row = 0, len = shape.length;  row < len;  row++)
 			shape[row].splice(0,1);
 		topLeft.col += 1;
 	}
-	for (var row = 0, len = shape.length; row < len; row++) {
+	for (var row = 0, len = shape.length;  row < len;  row++) {
 		for (var col = shape[row].length - 1; col >= 0; col--) {
 			if (shape[row][col] === 0) {
 				shape[row].splice(col,1);
@@ -487,13 +467,13 @@ Tet.prototype.cleanShape = function (o) {
 	return { shape: shape, topLeft: topLeft };
 }
 Array.prototype.allZeros = function () {
-	for (var col = 0, len = this.length; col < len; col++)
+	for (var col = 0, len = this.length;  col < len;  col++)
 		if (this[col] > 0) return false;
 	return true;
 }
 Tet.prototype.update = function () {
 	var currShape = [], topLeft = this.topLeft, q = [];
-	for (var row = 0, len = shape.length; row < len; row++) {
+	for (var row = 0, len = shape.length;  row < len;  row++) {
 		if (shape[row].allZeros()) {
 			if (currShape.length === 0) {
 				topLeft.row += 1;
@@ -505,7 +485,7 @@ Tet.prototype.update = function () {
 	}
 	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
 	this.type = -1;
-	for (var qs = 0, len = q.length; qs < len; qs++) {
+	for (var qs = 0, len = q.length;  qs < len;  qs++) {
 		var tmp = this.cleanShape(q[qs]);
 		var newTet = new Tet(this.game, -1);
 		newTet.type = this.type;
