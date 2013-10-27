@@ -11,6 +11,13 @@
  * landed Tet:  Tet that has landed and is no longer in control by user.
  */
 
+// Checks if an Array is all zeros or not
+Array.prototype.allZeros = function () {
+	for (var col = 0, len = this.length;  col < len;  col++)
+		if (this[col] > 0) return false;
+	return true;
+}
+
 function Game (canvas_id) {
 	if ( !(this instanceof arguments.callee) ) // force instantiation
 		return new Game(canvas_id);
@@ -18,9 +25,11 @@ function Game (canvas_id) {
 	// Assume 10 blocks can fit horizontally and 16 blocks vertically
 	// Thus, assume that canvas height will always be 1.6 times the magnitude of its width
 	// Assume block width and height will always be the same
-	this.newTet = true;
+	// public vars
 	this.BOARD_ROW_NUM = 16;
 	this.BOARD_COL_NUM = 10;
+	this.newTet = true;
+	this.currentTet = null;
 	this.score = 0,
 	this.allTets = [];
 	this.fallingClumps = [];
@@ -28,17 +37,20 @@ function Game (canvas_id) {
 	this.landedSemaphore = false;
 	this.updateLanded = true;
 
-	this.dropOnce = false; // debug
-	this.dropInterval = 750;
-	this.currentTet = null;
-	this.gameOver = false;
+	// debug/test cases
+	this.testCasing = false;
 
+	// private vars
+	this.dropInterval = 750;
+	this.gameOver = false;
 	this.canvas_width = 200,
 	this.block_s = this.canvas_width / 10,
 	this.canvas = document.getElementById(canvas_id);
 	this.canvas.width = this.canvas_width;
 	this.canvas.height = this.BOARD_ROW_NUM / this.BOARD_COL_NUM * this.canvas_width;
 	
+	// init functions
+	if (this.testCasing) this.testCase();
 	this.createTet();
 	this.tetDownLoop();
 	
@@ -48,11 +60,13 @@ function Game (canvas_id) {
 		switch (e.keyCode) {
 			case 32:
 				//console.log('dropping');
-				while (!that.newTet) {
-					that.currentTet.moveDown();
+				if (!that.newTet) {
+					while (!that.newTet) {
+						that.currentTet.moveDown();
+					}
+					that.draw();
+					that.tetDownLoop();
 				}
-				that.draw();
-				that.tetDownLoop();
 				break;
 			case 38:
 				//console.log('rotating');
@@ -82,7 +96,75 @@ function Game (canvas_id) {
 				console.log('unrecognized key: ' + e.keyCode);
 				clearInterval(that.loop);
 		}
-	}		
+	}
+}
+Game.prototype.testCase = function () {
+	// Check T (rotated once) single row (middle) deletion
+	/*var tmp = new Tet(this, 3);
+	tmp.topLeft = { row: 14, col: 0 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 5);
+	tmp.rotate();
+	tmp.topLeft = { row: 13, col: 2 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 4 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 7 };
+	this.currentTet = tmp;*/
+	// Check I (rotated once) double row (middle) deletion
+	/*var tmp = new Tet(this, 3);
+	tmp.topLeft = { row: 14, col: 0 };
+	this.allTets.push(tmp);
+	var tmp = new Tet(this, 3);
+	tmp.topLeft = { row: 12, col: 0 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 0);
+	tmp.rotate();
+	tmp.topLeft = { row: 12, col: 2 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 4 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 7 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.rotate();
+	tmp.rotate();
+	tmp.topLeft = { row: 12, col: 4 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.rotate();
+	tmp.rotate();
+	tmp.topLeft = { row: 12, col: 7 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 0);
+	tmp.rotate();
+	tmp.topLeft = { row: 11, col: 3 };
+	this.currentTet = tmp;*/
+	// Check I (rotated once) single row (middle) deletion
+	var tmp = new Tet(this, 3);
+	tmp.topLeft = { row: 14, col: 0 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 0);
+	tmp.rotate();
+	tmp.topLeft = { row: 12, col: 2 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 4 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 1);
+	tmp.topLeft = { row: 14, col: 7 };
+	this.allTets.push(tmp);
+	tmp = new Tet(this, 0);
+	tmp.rotate();
+	tmp.topLeft = { row: 11, col: 3 };
+	this.currentTet = tmp;
+		
+	this.newTet = false;
+	this.dropOnce = true;
 }
 Game.prototype.draw = function () {
 	//console.log('drawing canvas');
@@ -93,35 +175,6 @@ Game.prototype.draw = function () {
 	var c = this.canvas.getContext('2d');
 	c.clearRect(0, 0, this.canvas.width, this.canvas.height); // clear canvas
 	
-	// Draw blocks already landed
-	/*for (var row = 0, tetVisited = [], currLandedTetRef, lastLandedTetRef = null;  row < this.BOARD_ROW_NUM;  row++) {
-		for (var col = 0; col < this.BOARD_COL_NUM; col++) {
-			if (this.landed[row][col] != null) {
-				currLandedTetRef = this.landed[row][col].ref;
-				if (currLandedTetRef == lastLandedTetRef) continue;
-				if (tetVisited.indexOf(currLandedTetRef) >= 0) continue;
-				if (currLandedTetRef.type === -1) { this.landed[row][col] = null; continue; } // found a zombie Tet and removing it
-				tetVisited.push(currLandedTetRef);
-				//console.log(this.landed);
-				//console.log(this.landed[row][col].pos);
-				c.beginPath();
-
-				c.moveTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[0][0]) * this.block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[0][1]) * this.block_s);
-				for (var row = 1, len = currLandedTetRef.perimeter.length;  row < len;  row++) {
-					c.lineTo((currLandedTetRef.topLeft.col + currLandedTetRef.perimeter[row][0]) * this.block_s, (currLandedTetRef.topLeft.row + currLandedTetRef.perimeter[row][1]) * this.block_s);
-				}
-				
-				c.closePath();
-				c.lineJoin = 'miter';
-				c.lineWidth = 3;
-				c.fillStyle = tetColor[currLandedTetRef.type];
-				c.fill();
-				c.stroke();
-				
-				lastLandedTetRef = currLandedTetRef;
-			}
-		}
-	}*/
 	// Draw all Tets
 	for (var tet = 0, aTLen = this.allTets.length;  tet < aTLen;  tet++) {
 		var currTet = this.allTets[tet];
@@ -135,9 +188,49 @@ Game.prototype.draw = function () {
 		c.lineWidth = 3;
 		c.fillStyle = tetColor[currTet.type];
 		c.fill();
+		c.strokeStyle="#000";
 		c.stroke();
 	}
 	
+	// Draw living Tet "shadow"
+	if (this.currentTet !== null) {
+		var blb = { row: 0, col: 0 }, brb = { row: 0, col: 0 };
+		for (var row = 0, rLen = this.currentTet.shape.length;  row < rLen;  row++) {
+			for (var col = 0, cLen = this.currentTet.shape[row].length;  col < cLen;  col++) {
+				if (this.currentTet.shape[row][col] === 1) {
+					if (row >= blb.row && col <= blb.col) blb = { row: row, col: col };
+					else if (row >= brb.row && col >= brb.col) brb = { row: row, col: col };
+				}
+			}
+		}
+		/*console.log('row min: ' + Math.min(this.currentTet.topLeft.row + blb.row, this.currentTet.topLeft.row + brb.row));
+		console.log('col start: ' + (this.currentTet.topLeft.col + blb.col));
+		console.log('col end: ' + (this.currentTet.topLeft.col + brb.col));*/
+		var tll = { row: this.BOARD_ROW_NUM, col: 0 }, trl = { row: this.BOARD_ROW_NUM, col: brb.col + 1 };
+		for (var row = Math.min(this.currentTet.topLeft.row + blb.row, this.currentTet.topLeft.row + brb.row);  row < this.BOARD_ROW_NUM;  row++) {
+			for (var col = this.currentTet.topLeft.col + blb.col;  col <= this.currentTet.topLeft.col + brb.col;  col++) {
+				if (this.landed[row][col] === 1) {
+					//console.log(row +' '+ col);
+					if (row <= tll.row && col == this.currentTet.topLeft.col + blb.col) tll.row = row;
+					else if (row <= trl.row && col == this.currentTet.topLeft.col + brb.col) trl.row = row;
+				}
+			}
+		}
+		/*console.log(blb);
+		console.log(brb);
+		console.log(tll);
+		console.log(trl);*/
+		c.lineWidth = 1;
+		c.strokeStyle="#eee";
+		c.beginPath();
+		c.moveTo((this.currentTet.topLeft.col + blb.col) * this.block_s, (this.currentTet.topLeft.row + blb.row + 1) * this.block_s);
+		c.lineTo((this.currentTet.topLeft.col + tll.col) * this.block_s, (tll.row) * this.block_s);
+		c.moveTo((this.currentTet.topLeft.col + brb.col + 1) * this.block_s, (this.currentTet.topLeft.row + brb.row + 1) * this.block_s);
+		c.lineTo((this.currentTet.topLeft.col + trl.col) * this.block_s, (trl.row) * this.block_s);
+		c.stroke();
+	}
+	
+	// Draw Game Over text if game is over
 	if (this.gameOver) {
 		c.fillStyle = '#f00';
 		c.font = "36px Arial";
@@ -146,23 +239,6 @@ Game.prototype.draw = function () {
 		c.fillStyle = '#000';
 		c.strokeText("Game Over",6,170);
 	}
-	
-	// Draw blocks in current Tet
-	/*if (!this.newTet) {
-		// Draw perimeter in current Tet
-		c.beginPath();
-		//console.log(this.currentTet.perimeter);
-		c.moveTo((this.currentTet.topLeft.col + this.currentTet.perimeter[0][0]) * this.block_s, (this.currentTet.topLeft.row + this.currentTet.perimeter[0][1]) * this.block_s);
-		for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
-			c.lineTo((this.currentTet.topLeft.col + this.currentTet.perimeter[row][0]) * this.block_s, (this.currentTet.topLeft.row + this.currentTet.perimeter[row][1]) * this.block_s);
-		}
-		c.closePath();
-		c.lineJoin = 'miter';
-		c.lineWidth = 3;
-		c.fillStyle = tetColor[this.currentTet.type];
-		c.fill();
-		c.stroke();
-	}*/
 }
 Game.prototype.createTet = function () {
 	//console.log('creating Tet');
@@ -208,13 +284,15 @@ Game.prototype.getLanded = function () {
 	//console.log(this.landed);
 	return this.landed;
 }
-
-/*function TetNode (tet, pos) {
-	if ( !(this instanceof arguments.callee) ) // force instantiation
-		return new TetNode(tet, pos);
-	this.ref = tet;
-	this.pos = pos;
-}*/
+Game.prototype.alterShapes = function (fullRows) {
+	var firstRow = fullRows[0], lastRow = fullRows[fullRows.length - 1];
+	//console.log(this.allTets);
+	for (var tet = 0, len = this.allTets.length;  tet < len;  tet++) {
+		if (this.allTets[tet].topLeft.row <= firstRow - 4 || this.allTets[tet].topLeft.row > lastRow) continue;
+		this.allTets[tet].alterShape(fullRows);
+	}
+	this.updateLanded = true;
+}
 
 // Needed to clone arrays of arrays
 /*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
@@ -252,9 +330,9 @@ function Tet (game, type) {
 	if (type > -1 || type == undefined) {
 		this.topLeft = { row: 0, col: 4 };
 		this.potentialTopLeft = this.topLeft;
-		this.shape = this.getShapeMatrix(0);
-		this.calcPerimeter();
+		this.setShape(this.getShapeMatrix(0));
 	}
+	//console.log(this.shape);
 }
 /**
  * This function takes in a Tet type and rotation then outputs its shape matrix.
@@ -327,13 +405,13 @@ Tet.prototype.calcPerimeter = function () {
 	], checkNextShape;
 	for (var pRow = 0, pLen = periMatrix.length;  pRow < pLen;  pRow++) {
 		checkNextShape = false;
-		for (var row = 0, len = this.shape.length;  row < len;  row++) {
+		for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 			if (len != periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
 			}
 			if (checkNextShape) break;
-			for (var col = 0; col < this.shape[row].length; col++) {
+			for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
 				if (this.shape[row].length != periMatrix[pRow][0][row].length) {
 					checkNextShape = true;
 					break;
@@ -356,7 +434,7 @@ Tet.prototype.calcPerimeter = function () {
 	//console.log(this.shape);
 	this.perimeter = [];
 }
-Tet.prototype.changeShape = function (shape) {
+Tet.prototype.setShape = function (shape) {
 	this.shape = shape;
 	this.calcPerimeter();
 }
@@ -371,22 +449,18 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 		for (var col = 0, cLen = potShape[row].length;  col < cLen;  col++) {
 			if (potShape[row][col] !== 0) {
 				if (col + this.topLeft.col < 0) {
-					//this block would be to the left of the playing field
 					//console.log('left beyond playing field');
 					return false;
 				}
 				if (col + this.topLeft.col >= this.game.BOARD_COL_NUM) {
-					//this block would be to the right of the playing field
 					//console.log('right beyond playing field');
 					return false;
 				}
 				if (row + this.topLeft.row >= this.game.BOARD_ROW_NUM) {
-					//this block would be below the playing field
 					//console.log('below playing field');
 					return false;
 				}
 				if (this.game.landed[row + this.topLeft.row][col + this.topLeft.col] !== 0) {
-					//the space is taken
 					//console.log('rotate: space is taken');
 					return false;
 				}
@@ -401,19 +475,18 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	//console.log('checking bot coll');
 	var landed = this.game.getLanded();
+	//console.log(this.shape);
 	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
 			if (this.shape[row][col] !== 0) {
 				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
-					//this block would be below the playing field
 					//console.log('below playing field');
 					return true;
 				}
-				else if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
 					//console.log(landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
 					//console.log('bot: space taken');
 					//console.log(potentialTopLeft);
-					//the space is taken
 					return true;
 				}
 			}
@@ -427,18 +500,15 @@ Tet.prototype.checkSideCollision = function (potentialTopLeft) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
 			if (this.shape[row][col] !== 0) {
 				if (col + potentialTopLeft.col < 0) {
-					//this block would be to the left of the playing field
 					//console.log('left beyond playing field');
 					return true;
 				}
 				if (col + potentialTopLeft.col >= this.game.BOARD_COL_NUM) {
-					//this block would be to the right of the playing field
 					//console.log('right beyond playing field');
 					return true;
 				}
 				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
 					//console.log('side: space taken');
-					//the space is taken
 					return true;
 				}
 			}
@@ -460,44 +530,30 @@ Tet.prototype.moveDown = function () {
 	//console.log(potentialTopLeft);
 	if (!this.checkBotCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 	else {
-		/*for (var row = 0, len = this.shape.length;  row < len;  row++) {
-			for (var col = 0; col < this.shape[row].length; col++) {
-				if (this.shape[row][col] != 0) {
-					this.game.landed[row + this.topLeft.row][col + this.topLeft.col] = new TetNode(this, { row: row + this.topLeft.row, col: col + this.topLeft.col } );
-				}
-			}
-		}*/
+		this.game.currentTet = null;
 		this.game.updateLanded = true;
 		this.collided();
 	}
 }
 Tet.prototype.collided = function () {
-	if (this.type >= 0) this.game.newTet = true; // uncommented/unable this line once v1 collided() is removed
 	//console.log('tet down collision!');
-	var isFilled, lastRowRemoved = -1;
+	this.game.newTet = true;
+	var landed = this.game.getLanded(), isFilled, fullRows = [], fRLen;
 	for (var row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
 		isFilled = true;
-		for (var col = 0; col < this.game.BOARD_COL_NUM; col++) {
-			if (this.game.landed[row][col] === 0)
-				isFilled = false;
-		}
-		if (isFilled) {
-			//this.game.landed.splice(row, 1);
-			//this.game.landed.unshift([0,0,0,0,0,0,0,0,0,0]);
-			lastRowRemoved = row;
-			this.game.score++;
-			document.getElementById('score').innerHTML = this.game.score;
-			console.log('score:' + this.game.score);
-		}
+		for (var col = 0; col < this.game.BOARD_COL_NUM; col++)
+			if (landed[row][col] === 0) isFilled = false;
+		if (isFilled) fullRows.push(row);
 	}
-	return false;
-}
-Tet.prototype.alterShape = function (row, col) {
-	if (this.shape[row - this.topLeft.row][col - this.topLeft.col] === 0){
-		console.log('alterShape() exception: row: '+row+' col: '+col+' already zero of shape: '+this.shape+' in Tet:');
-		console.log(this);
-	}
-	this.shape[row - this.topLeft.row][col - this.topLeft.col] = 0;
+	//console.log(fullRows);
+	this.game.updateLanded = true;
+	fRLen = fullRows.length;
+	if (fRLen === 0) return;
+	this.game.score += Math.pow(fRLen, 1 + (fRLen - 1) * 0.1) * 100;
+	document.getElementById('score').innerHTML = this.game.score;
+	console.log('score:' + this.game.score);
+	this.game.alterShapes(fullRows);
+	this.game.updateLanded = true;
 }
 Tet.prototype.cleanShape = function (o) {
 	var shape = o.shape, topLeft = o.topLeft, done = false;
@@ -523,32 +579,45 @@ Tet.prototype.cleanShape = function (o) {
 	}
 	return { shape: shape, topLeft: topLeft };
 }
-Array.prototype.allZeros = function () {
-	for (var col = 0, len = this.length;  col < len;  col++)
-		if (this[col] > 0) return false;
-	return true;
-}
-Tet.prototype.update = function () {
-	var currShape = [], topLeft = this.topLeft, q = [];
-	for (var row = 0, len = shape.length;  row < len;  row++) {
-		if (shape[row].allZeros()) {
-			if (currShape.length === 0) {
-				topLeft.row += 1;
-				continue;
-			}
+Tet.prototype.updateTet = function () {
+	var currShape = [], topLeft, q = [];
+	for (var row = 0, len = this.shape.length;  row < len;  row++) {
+		if (!this.shape[row].allZeros()) {
+			if (currShape.length === 0) topLeft = { row: this.topLeft.row + row, col: this.topLeft.col };
+			currShape.push(this.shape[row]);
+		}
+		else {
+			if (currShape.length === 0) continue;
 			q.push({ shape: currShape, topLeft: topLeft });
 			currShape = [];
 		}
 	}
 	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
-	this.type = -1;
+	if (q.length === 0) this.game.allTets.splice(this.game.allTets.indexOf(this),1); // Remove this Tet from allTets if shape is a zero'd matrix (Tet completely gone)
+	//console.log(q);
 	for (var qs = 0, len = q.length;  qs < len;  qs++) {
 		var tmp = this.cleanShape(q[qs]);
-		var newTet = new Tet(this.game, -1);
-		newTet.type = this.type;
-		newTet.shape = tmp.shape;
-		newTet.topLeft = tmp.topLeft;
-		newTet.perimeter = newTet.calcPerimeter();
-		this.game.fallingClumps.push(newTet);
+		if (qs === 0) {
+			this.topLeft = tmp.topLeft;
+			this.setShape(tmp.shape);
+		}
+		else {
+			var newTet = new Tet(this.game, -1);
+			newTet.type = this.type;
+			newTet.topLeft = tmp.topLeft;
+			newTet.setShape(tmp.shape);
+			//this.game.fallingClumps.push(newTet);
+			this.game.allTets.push(newTet);
+		}
 	}
+}
+Tet.prototype.alterShape = function (fullRows) {
+	//console.log('altering shape');
+	for (var i = 0, len = fullRows.length, row;  i < len;  i++) {
+		row = fullRows[i] - this.topLeft.row;
+		if (row < 0 || row > this.shape.length - 1) continue;
+		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++)
+			this.shape[row][col] = 0;
+	}
+	this.updateTet();
 }
