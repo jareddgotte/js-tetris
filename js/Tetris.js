@@ -22,15 +22,16 @@ function Game (canvas_id) {
 	this.BOARD_ROW_NUM = 16;
 	this.BOARD_COL_NUM = 10;
 	this.score = 0,
+	this.allTets = [];
 	this.fallingClumps = [];
 	this.landed = []; // Build our empty landed array
-	for (var i = 0; i < this.BOARD_ROW_NUM; i++) {
-		this.landed[i] = [null,null,null,null,null,null,null,null,null,null];
-	}
+	this.landedSemaphore = false;
+	this.updateLanded = true;
 
 	this.dropOnce = false; // debug
 	this.dropInterval = 750;
 	this.currentTet = null;
+	this.gameOver = false;
 
 	this.canvas_width = 200,
 	this.block_s = this.canvas_width / 10,
@@ -93,7 +94,7 @@ Game.prototype.draw = function () {
 	c.clearRect(0, 0, this.canvas.width, this.canvas.height); // clear canvas
 	
 	// Draw blocks already landed
-	for (var row = 0, tetVisited = [], currLandedTetRef, lastLandedTetRef = null;  row < this.BOARD_ROW_NUM;  row++) {
+	/*for (var row = 0, tetVisited = [], currLandedTetRef, lastLandedTetRef = null;  row < this.BOARD_ROW_NUM;  row++) {
 		for (var col = 0; col < this.BOARD_COL_NUM; col++) {
 			if (this.landed[row][col] != null) {
 				currLandedTetRef = this.landed[row][col].ref;
@@ -120,10 +121,34 @@ Game.prototype.draw = function () {
 				lastLandedTetRef = currLandedTetRef;
 			}
 		}
+	}*/
+	// Draw all Tets
+	for (var tet = 0, aTLen = this.allTets.length;  tet < aTLen;  tet++) {
+		var currTet = this.allTets[tet];
+		c.beginPath();
+		c.moveTo((currTet.topLeft.col + currTet.perimeter[0][0]) * this.block_s, (currTet.topLeft.row + currTet.perimeter[0][1]) * this.block_s);
+		for (var row = 1, len = currTet.perimeter.length;  row < len;  row++) {
+			c.lineTo((currTet.topLeft.col + currTet.perimeter[row][0]) * this.block_s, (currTet.topLeft.row + currTet.perimeter[row][1]) * this.block_s);
+		}
+		c.closePath();
+		c.lineJoin = 'miter';
+		c.lineWidth = 3;
+		c.fillStyle = tetColor[currTet.type];
+		c.fill();
+		c.stroke();
+	}
+	
+	if (this.gameOver) {
+		c.fillStyle = '#f00';
+		c.font = "36px Arial";
+		c.fillText("Game Over",6,170);
+		c.lineWidth = 1;
+		c.fillStyle = '#000';
+		c.strokeText("Game Over",6,170);
 	}
 	
 	// Draw blocks in current Tet
-	if (!this.newTet) {
+	/*if (!this.newTet) {
 		// Draw perimeter in current Tet
 		c.beginPath();
 		//console.log(this.currentTet.perimeter);
@@ -137,13 +162,20 @@ Game.prototype.draw = function () {
 		c.fillStyle = tetColor[this.currentTet.type];
 		c.fill();
 		c.stroke();
-	}
+	}*/
 }
 Game.prototype.createTet = function () {
 	//console.log('creating Tet');
 	if (this.newTet) this.currentTet = new Tet(this);
 	//console.log(this.currentTet.shape);
 	this.newTet = false;
+	if (this.currentTet.checkBotCollision(this.currentTet.potentialTopLeft)) {
+		console.log('Game Over');
+		this.gameOver = true;
+		clearInterval(this.loop);
+		return;
+	}
+	else this.allTets.push(this.currentTet);
 	this.draw();
 }
 Game.prototype.tetDownLoop = function () {
@@ -156,13 +188,33 @@ Game.prototype.tetDownLoop = function () {
 		that.draw();
 	}, that.dropInterval);
 }
+Game.prototype.getLanded = function () {
+	if (this.updateLanded) {
+		for (var i = 0; i < this.BOARD_ROW_NUM; i++) {
+			this.landed[i] = [0,0,0,0,0,0,0,0,0,0];
+		}
+		for (var i = 0, aT = this.allTets, len = aT.length;  i < len;  i++) {
+			if (aT[i] === this.currentTet) continue;
+			for (var row = 0, rLen = aT[i].shape.length;  row < rLen;  row++) {
+				for (var col = 0, cLen = aT[i].shape[row].length;  col < cLen;  col++) {
+					if (aT[i].shape[row][col] != 0) {
+						this.landed[row + aT[i].topLeft.row][col + aT[i].topLeft.col] = 1;
+					}
+				}
+			}
+		}
+		this.updateLanded = false;
+	}
+	//console.log(this.landed);
+	return this.landed;
+}
 
-function TetNode (tet, pos) {
+/*function TetNode (tet, pos) {
 	if ( !(this instanceof arguments.callee) ) // force instantiation
 		return new TetNode(tet, pos);
 	this.ref = tet;
 	this.pos = pos;
-}
+}*/
 
 // Needed to clone arrays of arrays
 /*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
@@ -199,6 +251,7 @@ function Tet (game, type) {
 	this.rotation = 0;
 	if (type > -1 || type == undefined) {
 		this.topLeft = { row: 0, col: 4 };
+		this.potentialTopLeft = this.topLeft;
 		this.shape = this.getShapeMatrix(0);
 		this.calcPerimeter();
 	}
@@ -309,14 +362,14 @@ Tet.prototype.changeShape = function (shape) {
 }
 Tet.prototype.rotate = function () { // by default, always clockwise
 	//console.log('rotation: ' + this.rotation);
-	var potRot;
+	var landed = this.game.getLanded(), potRot, potShape;
 	if (this.rotation >= 3) potRot = 0;
 	else potRot = this.rotation + 1;
-	var potShape = this.getShapeMatrix(potRot);
+	potShape = this.getShapeMatrix(potRot);
 	// check for potential collisions
-	for (var row = 0, len = potShape.length;  row < len;  row++) {
-		for (var col = 0; col < potShape[row].length; col++) {
-			if (potShape[row][col] != 0) {
+	for (var row = 0, rLen = potShape.length;  row < rLen;  row++) {
+		for (var col = 0, cLen = potShape[row].length;  col < cLen;  col++) {
+			if (potShape[row][col] !== 0) {
 				if (col + this.topLeft.col < 0) {
 					//this block would be to the left of the playing field
 					//console.log('left beyond playing field');
@@ -332,7 +385,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 					//console.log('below playing field');
 					return false;
 				}
-				if (this.game.landed[row + this.topLeft.row][col + this.topLeft.col] != null) {
+				if (this.game.landed[row + this.topLeft.row][col + this.topLeft.col] !== 0) {
 					//the space is taken
 					//console.log('rotate: space is taken');
 					return false;
@@ -346,16 +399,18 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 	return true;
 }
 Tet.prototype.checkBotCollision = function (potentialTopLeft) {
-	for (var row = 0, len = this.shape.length;  row < len;  row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
+	//console.log('checking bot coll');
+	var landed = this.game.getLanded();
+	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
+		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
+			if (this.shape[row][col] !== 0) {
 				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
 					//this block would be below the playing field
 					//console.log('below playing field');
 					return true;
 				}
-				else if (this.game.landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != null) {
-					//console.log(this.game.landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
+				else if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
+					//console.log(landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
 					//console.log('bot: space taken');
 					//console.log(potentialTopLeft);
 					//the space is taken
@@ -367,9 +422,10 @@ Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	return false;
 }
 Tet.prototype.checkSideCollision = function (potentialTopLeft) {
-	for (var row = 0, len = this.shape.length;  row < len;  row++) {
-		for (var col = 0; col < this.shape[row].length; col++) {
-			if (this.shape[row][col] != 0) {
+	var landed = this.game.getLanded();
+	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
+		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
+			if (this.shape[row][col] !== 0) {
 				if (col + potentialTopLeft.col < 0) {
 					//this block would be to the left of the playing field
 					//console.log('left beyond playing field');
@@ -380,7 +436,7 @@ Tet.prototype.checkSideCollision = function (potentialTopLeft) {
 					//console.log('right beyond playing field');
 					return true;
 				}
-				if (this.game.landed[row + potentialTopLeft.row][col + potentialTopLeft.col] != null) {
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
 					//console.log('side: space taken');
 					//the space is taken
 					return true;
@@ -404,16 +460,16 @@ Tet.prototype.moveDown = function () {
 	//console.log(potentialTopLeft);
 	if (!this.checkBotCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
 	else {
-		for (var row = 0, len = this.shape.length;  row < len;  row++) {
+		/*for (var row = 0, len = this.shape.length;  row < len;  row++) {
 			for (var col = 0; col < this.shape[row].length; col++) {
 				if (this.shape[row][col] != 0) {
 					this.game.landed[row + this.topLeft.row][col + this.topLeft.col] = new TetNode(this, { row: row + this.topLeft.row, col: col + this.topLeft.col } );
 				}
 			}
-		}
-		return this.collided();
+		}*/
+		this.game.updateLanded = true;
+		this.collided();
 	}
-	return true;
 }
 Tet.prototype.collided = function () {
 	if (this.type >= 0) this.game.newTet = true; // uncommented/unable this line once v1 collided() is removed
@@ -422,14 +478,15 @@ Tet.prototype.collided = function () {
 	for (var row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
 		isFilled = true;
 		for (var col = 0; col < this.game.BOARD_COL_NUM; col++) {
-			if (this.game.landed[row][col] == null)
+			if (this.game.landed[row][col] === 0)
 				isFilled = false;
 		}
 		if (isFilled) {
-			this.game.landed.splice(row, 1);
-			this.game.landed.unshift([null,null,null,null,null,null,null,null,null,null]);
+			//this.game.landed.splice(row, 1);
+			//this.game.landed.unshift([0,0,0,0,0,0,0,0,0,0]);
 			lastRowRemoved = row;
 			this.game.score++;
+			document.getElementById('score').innerHTML = this.game.score;
 			console.log('score:' + this.game.score);
 		}
 	}

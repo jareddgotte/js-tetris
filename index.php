@@ -13,8 +13,6 @@
 
 <script src="js/Tetris.js"></script>
 <script>
-//<![CDATA[
-
 // The collision detection is mostly inspired from the article: http://gamedev.tutsplus.com/tutorials/implementation/implementing-tetris-collision-detection/ (by Michael James Williams on Oct 6th 2012)
 // The reason why I did not entirely come up with my own algorithms for everything is for the sake of time
 
@@ -23,8 +21,6 @@
 window.onload = function() {
 	Game('canvas');
 }
-
-//]]>
 </script>
 <style>
 #canvas {
@@ -32,11 +28,17 @@ window.onload = function() {
 	margin: 0 auto;
 	display: block;
 }
+#message, #score_wrapper {
+	width: 200px;
+	margin: 0 auto;
+}
 </style>
 </head>
 <body>
 
 <div id="main">
+	<div id="message"></div>
+	<div id="score_wrapper">Score: <span id="score">0</span></div><!--score_wrapper-->
 	<canvas id="canvas"></canvas> 
 </div><!--main-->
 
