@@ -11,13 +11,6 @@
  * landed Tet:  Tet that has landed and is no longer in control by user.
  */
 
-// Checks if an Array is all zeros or not
-Array.prototype.allZeros = function () {
-	for (var col = 0, len = this.length;  col < len;  col++)
-		if (this[col] > 0) return false;
-	return true;
-}
-
 function Game (canvas_id) {
 	if ( !(this instanceof arguments.callee) ) // force instantiation
 		return new Game(canvas_id);
@@ -34,9 +27,7 @@ function Game (canvas_id) {
 	this.score = 0,
 	this.allTets = [];
 	this.tetsToRemove = [];
-	this.fallingClumps = [];
 	this.landed = []; // Build our empty landed array
-	this.landedSemaphore = false;
 	this.updateLanded = true;
 
 	// debug/test cases
@@ -112,72 +103,168 @@ function Game (canvas_id) {
 	}
 }
 Game.prototype.testCase = function () {
-	// Check T (rotated once) single row (middle) deletion
-	/*var tmp = new Tet(this, 3);
-	tmp.topLeft = { row: 14, col: 0 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 5);
-	tmp.rotate();
-	tmp.topLeft = { row: 13, col: 2 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 4 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 7 };
-	this.currentTet = tmp;*/
-	// Check I (rotated once) double row (middle) deletion
-	var tmp = new Tet(this, 3);
-	tmp.topLeft = { row: 14, col: 0 };
-	this.allTets.push(tmp);
-	var tmp = new Tet(this, 3);
-	tmp.topLeft = { row: 12, col: 0 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 0);
-	tmp.rotate();
-	tmp.topLeft = { row: 12, col: 2 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 4 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 7 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.rotate();
-	tmp.rotate();
-	tmp.topLeft = { row: 12, col: 4 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.rotate();
-	tmp.rotate();
-	tmp.topLeft = { row: 12, col: 7 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 0);
-	tmp.rotate();
-	tmp.topLeft = { row: 11, col: 3 };
-	this.currentTet = tmp;
-	// Check I (rotated once) single row (middle) deletion
-	/*var tmp = new Tet(this, 3);
-	tmp.topLeft = { row: 14, col: 0 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 0);
-	tmp.rotate();
-	tmp.topLeft = { row: 12, col: 2 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 4 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 1);
-	tmp.topLeft = { row: 14, col: 7 };
-	this.allTets.push(tmp);
-	tmp = new Tet(this, 0);
-	tmp.rotate();
-	tmp.topLeft = { row: 11, col: 3 };
-	this.currentTet = tmp;*/
-		
+	var tmp;
+	switch (3) {
+		case 0: // Check T (rotated once) single row (middle) deletion
+			tmp = new Tet(this, 3);
+			tmp.topLeft = { row: 14, col: 0 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 5);
+			tmp.rotate();
+			tmp.topLeft = { row: 13, col: 2 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 7 };
+			this.currentTet = tmp;
+			break;
+		case 1: // Check I (rotated once) double row (middle) deletion
+			tmp = new Tet(this, 3);
+			tmp.topLeft = { row: 14, col: 0 };
+			this.allTets.push(tmp);
+			var tmp = new Tet(this, 3);
+			tmp.topLeft = { row: 12, col: 0 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0);
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 2 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 7 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 7 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0);
+			tmp.rotate();
+			tmp.topLeft = { row: 11, col: 3 };
+			this.currentTet = tmp;
+			break;
+		case 2: // Check I (rotated once) single row (middle) deletion
+			tmp = new Tet(this, 3);
+			tmp.topLeft = { row: 14, col: 0 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0);
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 2 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1);
+			tmp.topLeft = { row: 14, col: 7 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0);
+			tmp.rotate();
+			tmp.topLeft = { row: 11, col: 3 };
+			this.currentTet = tmp;
+			break;
+		case 3: // Check if cascade alg works - dependant order
+			tmp = new Tet(this, 5); // T
+			tmp.rotate();
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 13, col: 0 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, -1); // 2x1 fragment
+			var shape = [[1],[1]];
+			tmp.setShape(shape);
+			tmp.topLeft = { row: 14, col: 3 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 5); // T
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 3 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 2); // L
+			tmp.topLeft = { row: 10, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 1); // J
+			tmp.rotate();
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 9, col: 3 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0); // I
+			tmp.topLeft = { row: 15, col: 5 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 3); // O
+			tmp.topLeft = { row: 13, col: 5 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 3); // O
+			tmp.topLeft = { row: 13, col: 7 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0); // I
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 9 };
+			this.allTets.push(tmp);
+			// Falling
+			tmp = new Tet(this, 2); // L
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 1 };
+			this.currentTet = tmp;
+			break;
+		case 4: // Check if cascade alg works - double delete
+			tmp = new Tet(this, 1); // J
+			tmp.rotate();
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 13, col: 0 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, -1); // 1x1 fragment
+			var shape = [[1]];
+			tmp.setShape(shape);
+			tmp.topLeft = { row: 15, col: 1 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 0); // I
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 3 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 3); // O
+			tmp.topLeft = { row: 14, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 3); // O
+			tmp.topLeft = { row: 14, col: 6 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 3); // O
+			tmp.topLeft = { row: 14, col: 8 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 5); // T
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 4 };
+			this.allTets.push(tmp);
+			tmp = new Tet(this, 5); // T
+			tmp.rotate();
+			tmp.rotate();
+			tmp.topLeft = { row: 12, col: 7 };
+			this.allTets.push(tmp);
+			// Falling
+			tmp = new Tet(this, 2); // L
+			tmp.rotate();
+			tmp.topLeft = { row: 11, col: 1 };
+			this.currentTet = tmp;
+			break;
+		default: // Do nothing
+			tmp = new Tet(this);
+			this.currentTet = tmp;
+	}
+
+	// Do not change these
 	this.newTet = false;
 	this.dropOnce = true;
+	this.updateLanded = true;
 }
 Game.prototype.draw = function () {
 	//console.log('drawing canvas');
@@ -221,7 +308,6 @@ Game.prototype.draw = function () {
 	c.lineTo(2 * 4 * this.block_s + 3, 2 * this.block_s - 6);
 	c.lineTo(2 * 4 * this.block_s + 3, this.panel_height);
 	c.lineTo(this.canvas_width, this.panel_height);
-	//c.closePath();
 	c.lineWidth = 2;
 	c.strokeStyle = "#000";
 	c.stroke();
@@ -302,13 +388,14 @@ Game.prototype.tetDownLoop = function () {
 		that.draw();
 	}, that.dropInterval);
 }
-Game.prototype.getLanded = function () {
+Game.prototype.getLanded = function (tet) {
+	if (tet !== undefined) this.updateLanded = true;
 	if (this.updateLanded) {
 		for (var i = 0; i < this.BOARD_ROW_NUM; i++) {
 			this.landed[i] = [0,0,0,0,0,0,0,0,0,0];
 		}
 		for (var i = 0, aT = this.allTets, len = aT.length;  i < len;  i++) {
-			if (aT[i] === this.currentTet) continue;
+			if (aT[i] === this.currentTet || aT[i] === tet) continue;
 			for (var row = 0, rLen = aT[i].shape.length;  row < rLen;  row++) {
 				for (var col = 0, cLen = aT[i].shape[row].length;  col < cLen;  col++) {
 					if (aT[i].shape[row][col] != 0) {
@@ -319,7 +406,6 @@ Game.prototype.getLanded = function () {
 		}
 		this.updateLanded = false;
 	}
-	//console.log(this.landed);
 	return this.landed;
 }
 Game.prototype.alterShapes = function (fullRows) {
@@ -338,17 +424,6 @@ Game.prototype.alterShapes = function (fullRows) {
 	this.tetsToRemove = [];
 	this.updateLanded = true;
 }
-
-// Needed to clone arrays of arrays
-/*Object.prototype.clone = function() { // http://my.opera.com/GreyWyvern/blog/show.dml/1725165
-	var newObj = (this instanceof Array) ? [] : {};
-	for (i in this) {
-		if (i == 'clone') continue;
-		if (this[i] && typeof this[i] == "object") {
-			newObj[i] = this[i].clone();
-		} else newObj[i] = this[i]
-	} return newObj;
-}*/
 
 /**
  * This function creates a Tet class intended to be instantiated by "new Tet()".
@@ -518,8 +593,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 }
 Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	//console.log('checking bot coll');
-	var landed = this.game.getLanded();
-	//console.log(this.shape);
+	var landed = this.game.getLanded(this);
 	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
 			if (this.shape[row][col] !== 0) {
@@ -528,9 +602,7 @@ Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 					return true;
 				}
 				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
-					//console.log(landed[row + potentialTopLeft.row][col + potentialTopLeft.col]);
 					//console.log('bot: space taken');
-					//console.log(potentialTopLeft);
 					return true;
 				}
 			}
@@ -589,15 +661,36 @@ Tet.prototype.collided = function () {
 			if (landed[row][col] === 0) isFilled = false;
 		if (isFilled) fullRows.push(row);
 	}
-	//console.log(fullRows);
 	this.game.updateLanded = true;
 	fRLen = fullRows.length;
 	if (fRLen === 0) return;
 	this.game.score += Math.pow(fRLen, 1 + (fRLen - 1) * 0.1) * 10000;
-	//document.getElementById('score').innerHTML = Math.floor(this.game.score);
-	//console.log('score:' + this.game.score);
 	this.game.alterShapes(fullRows);
 	this.game.updateLanded = true;
+	// perform animations
+	var that = this, movingTets = [0], tetsMoved,
+	moveLoop = setInterval( function() {
+		movingTets = [];
+		tetsMoved = true;
+		while (tetsMoved) {
+			tetsMoved = false;
+			for (tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;  tet < tLen;  tet++) {
+				if (movingTets.indexOf(aT[tet], 0) > -1 || (aT[tet] === that.game.currentTet && that.game.newTet !== true)) continue;
+				potTL = { row: aT[tet].topLeft.row + 1, col: aT[tet].topLeft.col };
+				if (!aT[tet].checkBotCollision(potTL)) {
+					aT[tet].topLeft = potTL;
+					movingTets.push(aT[tet]);
+					tetsMoved = true;
+				}
+			}
+			that.game.updateLanded = true;
+		}
+		that.game.draw();
+		if (movingTets.length === 0) {
+			clearInterval(moveLoop);
+			that.collided();
+		}
+	}, 150);
 }
 Tet.prototype.cleanShape = function (o) {
 	var shape = o.shape, topLeft = o.topLeft, done = false;
@@ -622,6 +715,11 @@ Tet.prototype.cleanShape = function (o) {
 		}
 	}
 	return { shape: shape, topLeft: topLeft };
+}
+Array.prototype.allZeros = function () { // Checks if an Array is all zeros or not
+	for (var col = 0, len = this.length;  col < len;  col++)
+		if (this[col] > 0) return false;
+	return true;
 }
 Tet.prototype.updateTet = function () {
 	var currShape = [], topLeft, q = [];
