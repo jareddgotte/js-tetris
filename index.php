@@ -24,21 +24,15 @@ window.onload = function() {
 </script>
 <style>
 #canvas {
-	border: 1px solid black;
+	border: 2px solid black;
 	margin: 0 auto;
 	display: block;
-}
-#message, #score_wrapper {
-	width: 200px;
-	margin: 0 auto;
 }
 </style>
 </head>
 <body>
 
 <div id="main">
-	<div id="message"></div>
-	<div id="score_wrapper">Score: <span id="score">0</span></div><!--score_wrapper-->
 	<canvas id="canvas"></canvas> 
 </div><!--main-->
 
