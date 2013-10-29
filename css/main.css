@@ -7,14 +7,80 @@ h1 {
 	font-size: 3em;
 	line-height: 1.1;
 }
+h2 {
+	font-size: 2.3em;
+	line-height: 1.1;
+}
+h3 {
+	font-size: 1.3em;
+	line-height: 1.1;
+}
 strong, b {
 	font-weight: bold;
 }
 #main {
-	/* [disabled]border: 1px solid #000; */
 	color: #000;
 	margin: 4px auto;
-	padding: 0;
-	min-width: 768px;
-	max-width: 1038px;
+	width: 712px;
+}
+#main #tetris_banner {
+	text-align: center;
+	margin: 0 auto 4px;
+	display: block;
+}
+#canvas {
+	border-top: 2px solid black;
+	border-bottom: 2px solid black;
+	margin: 0 auto;
+	display: block;
+	float: left;
+}
+.panel {
+	border: 2px solid black;
+	width: 250px;
+	height: 400px;
+	float: left;
+}
+.panel h2 {
+	text-align: center;
+}
+.panel h3 {
+	display: block;
+	float: left;
+	line-height: 1.5;
+}
+.panel ul li {
+	margin-left: 3px;
+	line-height: 1.4;
+	overflow: hidden;
+}
+/* Leading dots trick from http://www.w3.org/Style/Examples/007/leaders.en.html */
+.panel ul li div:before {
+	float: left;
+	width: 0;
+	white-space: nowrap;
+	content:
+		". . . . . . . . . . . . . . . . . . . . "
+		". . . . . . . . . . . . . . . . . . . . "
+		". . . . . . . . . . . . . . . . . . . . "
+		". . . . . . . . . . . . . . . . . . . . ";
+}
+.panel ul li div, .panel ul li h3:first-child {
+	float: left;
+	width: 130px;
+	padding-left: 10px;
+	overflow: hidden;
+}
+.panel ul li span:first-child {
+	background: white;
+}
+.panel ul li span {
+	font-size: .9em;
+	padding-left: 5px;
+}
+#footer {
+	overflow: hidden;
+	margin: 4px auto;
+	width: 712px;
+	padding: 3px;
 }

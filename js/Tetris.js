@@ -3,6 +3,11 @@
 // JS Data Types: http://www.w3schools.com/js/js_datatypes.asp
 // JS Try Catch Throw Errors Tut: http://www.w3schools.com/js/js_errors.asp
 
+// The collision detection is mostly inspired from the article: http://gamedev.tutsplus.com/tutorials/implementation/implementing-tetris-collision-detection/ (by Michael James Williams on Oct 6th 2012)
+// The reason why I did not entirely come up with my own algorithms for everything is for the sake of time
+
+// Most of the standards I used for Tetris came from http://en.wikipedia.org/wiki/Tetris
+
 /* Nomenclature:
  *
  * user:        Person playing the game.
@@ -12,51 +17,77 @@
  */
 
 function Game (canvas_id) {
-	if ( !(this instanceof arguments.callee) ) // force instantiation
-		return new Game(canvas_id);
+	if (!(this instanceof arguments.callee)) return new Game(canvas_id); // force instantiation
 	
-	// Assume 10 blocks can fit horizontally and 16 blocks vertically
-	// Thus, assume that canvas height will always be 1.6 times the magnitude of its width
-	// Assume block width and height will always be the same
+	// Developer's Mode
+	this.devModeOn = false;
+	
 	// public vars
-	this.BOARD_ROW_NUM = 16;
+	this.BOARD_ROW_NUM = 16; // Tetris standard is to have 10 horizontal blocks by 16 vertical blocks
 	this.BOARD_COL_NUM = 10;
 	this.newTet = true;
 	this.currentTet = null;
 	this.nextTet = null;
-	this.score = 0,
+	this.updateLanded = true;
 	this.allTets = [];
 	this.tetsToRemove = [];
-	this.landed = []; // Build our empty landed array
-	this.updateLanded = true;
-
-	// debug/test cases
-	this.testCasing = false;
+	this.score = 0;
 
 	// private vars
-	this.dropInterval = 750;
+	this.dropInterval = 750; // 750
 	this.gameOver = false;
-	this.canvas_width = 200,
-	this.block_s = this.canvas_width / 10,
+	this.canvasWidth = 200;
+	this.blockS = this.canvasWidth / 10; // Assume block width and height will always be the same
 	this.canvas = document.getElementById(canvas_id);
-	this.canvas.width = this.canvas_width;
-	this.canvas.height = 2 * this.canvas_width;
-	//this.canvas.height = this.BOARD_ROW_NUM / this.BOARD_COL_NUM * this.canvas_width;
-	this.panel_height = Math.round((2 - this.BOARD_ROW_NUM / this.BOARD_COL_NUM) * this.canvas_width);
-	//console.log(this.panel_height);
+	this.canvas.width = this.canvasWidth;
+	this.canvas.height = 2 * this.canvasWidth;
+	this.panelHeight = Math.round((2 - this.BOARD_ROW_NUM / this.BOARD_COL_NUM) * this.canvasWidth);
+	this.landed = [];
+	this.paused = false;
 
 	// init functions
-	if (this.testCasing) this.testCase();
 	this.createTet();
 	this.tetDownLoop();
+	this.handleDocumentEvents(this);
+}
+Game.prototype.handleDocumentEvents = function (that) {
+	// Handle page visibility change
+	// From https://developer.mozilla.org/en-US/docs/Web/Guide/User_experience/Using_the_Page_Visibility_API?redirectlocale=en-US&redirectslug=DOM%2FUsing_the_Page_Visibility_API
+	var hidden, visibilityChange;
+	if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support
+		hidden = "hidden";
+		visibilityChange = "visibilitychange";
+	} else if (typeof document.mozHidden !== "undefined") {
+		hidden = "mozHidden";
+		visibilityChange = "mozvisibilitychange";
+	} else if (typeof document.msHidden !== "undefined") {
+		hidden = "msHidden";
+		visibilityChange = "msvisibilitychange";
+	} else if (typeof document.webkitHidden !== "undefined") {
+		hidden = "webkitHidden";
+		visibilityChange = "webkitvisibilitychange";
+	}
+	function handleVisibilityChange() {
+		if (document[hidden]) {
+			clearInterval(that.loop);
+			that.paused = true;
+			that.draw();
+		} else {
+			if (!that.gameOver) {
+				that.tetDownLoop();
+				that.dropOnce = false;
+			}
+			that.paused = false;
+			that.draw();
+		}
+	}
+	document.addEventListener(visibilityChange, handleVisibilityChange, false);
 	
-	var that = this;
+	// Handle key events
 	document.onkeydown = function(e) { // http://www.javascripter.net/faq/keycodes.htm for keycodes
-		//console.log('key downed: ' + e.keyCode);
 		switch (e.keyCode) {
-			case 32:
-				//console.log('dropping');
-				if (!that.newTet) {
+			case 32: //console.log('dropping');
+				if (!that.newTet && !that.paused) {
 					while (!that.newTet) {
 						that.currentTet.moveDown();
 					}
@@ -64,30 +95,26 @@ function Game (canvas_id) {
 					that.tetDownLoop();
 				}
 				break;
-			case 38:
-				//console.log('rotating');
-				if (!that.newTet) {
+			case 38: //console.log('rotating');
+				if (!that.newTet && !that.paused) {
 					that.currentTet.rotate();
 					that.draw();
 				}
 				break;
-			case 37:
-				//console.log('moving left');
-				if (!that.newTet) {
+			case 37: //console.log('moving left');
+				if (!that.newTet && !that.paused) {
 					that.currentTet.moveLeft();
 					that.draw();
 				}
 				break;
-			case 39:
-				//console.log('moving right');
-				if (!that.newTet) {
+			case 39: //console.log('moving right');
+				if (!that.newTet && !that.paused) {
 					that.currentTet.moveRight();
 					that.draw();
 				}
 				break;
-			case 40:
-				//console.log('moving down');
-				if (!that.newTet) {
+			case 40: //console.log('moving down');
+				if (!that.newTet && !that.paused) {
 					var skip = false;
 					if (that.newTet) skip = true;
 					if (!skip) clearInterval(that.loop);
@@ -96,179 +123,74 @@ function Game (canvas_id) {
 					if (!skip) that.tetDownLoop();
 				}
 				break;
+			case 80: case 83: // p for pause, s for stop (they do same thing)
+				if (!that.paused) { 
+					clearInterval(that.loop);
+					that.paused = true;
+					that.draw();
+				}
+				else {
+					if (!that.gameOver) {
+						that.tetDownLoop();
+						that.dropOnce = false;
+					}
+					that.paused = false;
+					that.draw();
+				}
+				break;
+			case 82: // r for reset
+				that.allTets = [];
+				that.currentTet = null;
+				that.gameOver = false;
+				that.newTet = true;
+				that.nextTet = null;
+				that.paused = false;
+				that.score = 0;
+				that.createTet();
+				that.tetDownLoop();
+				break;
+			// Developer's Controls
+			case 48: case 49: case 50: case 51: case 52: // test cases found in TestCase.js
+			case 53: case 54: case 55: case 56: case 57: // number keys 0 to 9 (not numpad)
+				if (that.devModeOn) {
+					that.allTets = [];
+					that.gameOver = false;
+					that.score = 0;
+					that.testCase(e.keyCode - 48);
+					that.createTet();
+					that.tetDownLoop();
+				}
+				break;
+			case 71: // g for game over
+				if (that.devModeOn) {
+					that.gameOver = true;
+					clearInterval(that.loop);
+					//that.score = 1939999955999999;
+					that.score = 10000;
+					that.draw();
+				}
+				break;
+			case 72: // h to reset high score to zero
+				if (that.devModeOn) {
+					that.setHighScore("highScore", 0, 365);
+					that.draw();
+				}
+				break;
 			default:
 				console.log('unrecognized key: ' + e.keyCode);
-				clearInterval(that.loop);
 		}
 	}
 }
-Game.prototype.testCase = function () {
-	var tmp;
-	switch (3) {
-		case 0: // Check T (rotated once) single row (middle) deletion
-			tmp = new Tet(this, 3);
-			tmp.topLeft = { row: 14, col: 0 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 5);
-			tmp.rotate();
-			tmp.topLeft = { row: 13, col: 2 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 7 };
-			this.currentTet = tmp;
-			break;
-		case 1: // Check I (rotated once) double row (middle) deletion
-			tmp = new Tet(this, 3);
-			tmp.topLeft = { row: 14, col: 0 };
-			this.allTets.push(tmp);
-			var tmp = new Tet(this, 3);
-			tmp.topLeft = { row: 12, col: 0 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0);
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 2 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 7 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 7 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0);
-			tmp.rotate();
-			tmp.topLeft = { row: 11, col: 3 };
-			this.currentTet = tmp;
-			break;
-		case 2: // Check I (rotated once) single row (middle) deletion
-			tmp = new Tet(this, 3);
-			tmp.topLeft = { row: 14, col: 0 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0);
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 2 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1);
-			tmp.topLeft = { row: 14, col: 7 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0);
-			tmp.rotate();
-			tmp.topLeft = { row: 11, col: 3 };
-			this.currentTet = tmp;
-			break;
-		case 3: // Check if cascade alg works - dependant order
-			tmp = new Tet(this, 5); // T
-			tmp.rotate();
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 13, col: 0 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, -1); // 2x1 fragment
-			var shape = [[1],[1]];
-			tmp.setShape(shape);
-			tmp.topLeft = { row: 14, col: 3 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 5); // T
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 3 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 2); // L
-			tmp.topLeft = { row: 10, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 1); // J
-			tmp.rotate();
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 9, col: 3 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0); // I
-			tmp.topLeft = { row: 15, col: 5 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 3); // O
-			tmp.topLeft = { row: 13, col: 5 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 3); // O
-			tmp.topLeft = { row: 13, col: 7 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0); // I
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 9 };
-			this.allTets.push(tmp);
-			// Falling
-			tmp = new Tet(this, 2); // L
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 1 };
-			this.currentTet = tmp;
-			break;
-		case 4: // Check if cascade alg works - double delete
-			tmp = new Tet(this, 1); // J
-			tmp.rotate();
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 13, col: 0 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, -1); // 1x1 fragment
-			var shape = [[1]];
-			tmp.setShape(shape);
-			tmp.topLeft = { row: 15, col: 1 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 0); // I
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 3 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 3); // O
-			tmp.topLeft = { row: 14, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 3); // O
-			tmp.topLeft = { row: 14, col: 6 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 3); // O
-			tmp.topLeft = { row: 14, col: 8 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 5); // T
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 4 };
-			this.allTets.push(tmp);
-			tmp = new Tet(this, 5); // T
-			tmp.rotate();
-			tmp.rotate();
-			tmp.topLeft = { row: 12, col: 7 };
-			this.allTets.push(tmp);
-			// Falling
-			tmp = new Tet(this, 2); // L
-			tmp.rotate();
-			tmp.topLeft = { row: 11, col: 1 };
-			this.currentTet = tmp;
-			break;
-		default: // Do nothing
-			tmp = new Tet(this);
-			this.currentTet = tmp;
+Number.prototype.commaSeparate = function () { // comma separate number
+	var tmp = Math.floor(this);
+	if (tmp <= 99999999999999) {
+		while (/(\d+)(\d{3})/.test(tmp.toString())) // from http://stackoverflow.com/a/12947816
+			tmp = tmp.toString().replace(/(\d+)(\d{3})/, '$1' + ','+'$2');
 	}
-
-	// Do not change these
-	this.newTet = false;
-	this.dropOnce = true;
-	this.updateLanded = true;
+	else if (tmp > 999999999999999) tmp = tmp.toExponential(10);
+	return tmp;
 }
 Game.prototype.draw = function () {
-	//console.log('drawing canvas');
-
 	// Keys respectively reflect the HTML color code of Tets: I, J, L, O, S, T, Z
 	var tetColor = ['#3cc','#0af','#f90','#ee0','#0c0','#c0c','#c00'];
 
@@ -276,17 +198,23 @@ Game.prototype.draw = function () {
 	c.clearRect(0, 0, this.canvas.width, 2 * this.canvas.width); // clear canvas
 	
 	// Draw top panel
+	// paused
+	if (this.paused) {
+		c.fillStyle = '#f00';
+		c.font = "16px Arial";
+		c.fillText("PAUSED", 5, 74);
+	}
 	// score
 	c.fillStyle = '#000';
 	c.font = "16px Arial";
-	c.fillText("Score: " + Math.floor(this.score), 4, 17);
+	c.fillText("Score: " + this.score.commaSeparate(), 4, 17); // 16 numbers max, or 14 with commas.  If beyond, switch to scientific notation.
 	// next Tet
 	c.font = "16px Arial";
 	c.fillText("Next:", 35, 50);
 	c.beginPath();
-	c.moveTo((this.nextTet.topLeft.col + this.nextTet.perimeter[0][0]) * this.block_s, (this.nextTet.topLeft.row + this.nextTet.perimeter[0][1]) * this.block_s + 37);
+	c.moveTo((this.nextTet.topLeft.col + this.nextTet.perimeter[0][0]) * this.blockS, (this.nextTet.topLeft.row + this.nextTet.perimeter[0][1]) * this.blockS + 37);
 	for (var row = 1, len = this.nextTet.perimeter.length;  row < len;  row++) {
-		c.lineTo((this.nextTet.topLeft.col + this.nextTet.perimeter[row][0]) * this.block_s, (this.nextTet.topLeft.row + this.nextTet.perimeter[row][1]) * this.block_s + 37);
+		c.lineTo((this.nextTet.topLeft.col + this.nextTet.perimeter[row][0]) * this.blockS, (this.nextTet.topLeft.row + this.nextTet.perimeter[row][1]) * this.blockS + 37);
 	}
 	c.closePath();
 	c.lineWidth = 2;
@@ -296,18 +224,18 @@ Game.prototype.draw = function () {
 	c.stroke();
 	// separator line
 	c.beginPath();
-	c.moveTo(0, this.panel_height);
-	c.lineTo(this.canvas_width, this.panel_height);
+	c.moveTo(0, this.panelHeight);
+	c.lineTo(this.canvasWidth, this.panelHeight);
 	c.lineWidth = 2;
 	c.strokeStyle = "#eee";
 	c.stroke();
 	c.beginPath();
-	c.moveTo(0, this.panel_height);
-	c.lineTo(4 * this.block_s - 3, this.panel_height);
-	c.lineTo(4 * this.block_s - 3, 2 * this.block_s - 6);
-	c.lineTo(2 * 4 * this.block_s + 3, 2 * this.block_s - 6);
-	c.lineTo(2 * 4 * this.block_s + 3, this.panel_height);
-	c.lineTo(this.canvas_width, this.panel_height);
+	c.moveTo(0, this.panelHeight);
+	c.lineTo(4 * this.blockS - 3, this.panelHeight);
+	c.lineTo(4 * this.blockS - 3, 2 * this.blockS - 6);
+	c.lineTo(2 * 4 * this.blockS + 3, 2 * this.blockS - 6);
+	c.lineTo(2 * 4 * this.blockS + 3, this.panelHeight);
+	c.lineTo(this.canvasWidth, this.panelHeight);
 	c.lineWidth = 2;
 	c.strokeStyle = "#000";
 	c.stroke();
@@ -315,14 +243,14 @@ Game.prototype.draw = function () {
 	// Draw living Tet "shadow"
 	if (!this.newTet) {
 		var tmpPotTopLeft = { row: this.currentTet.topLeft.row + 1, col: this.currentTet.topLeft.col };
-		while (!this.currentTet.checkBotCollision(tmpPotTopLeft)) {
+		while (!this.currentTet.doesTetCollideBot(tmpPotTopLeft)) {
 			tmpPotTopLeft.row++;
 		}
 		tmpPotTopLeft.row--;
 		c.beginPath();
-		c.moveTo((tmpPotTopLeft.col + this.currentTet.perimeter[0][0]) * this.block_s, (tmpPotTopLeft.row + this.currentTet.perimeter[0][1]) * this.block_s + this.panel_height);
+		c.moveTo((tmpPotTopLeft.col + this.currentTet.perimeter[0][0]) * this.blockS, (tmpPotTopLeft.row + this.currentTet.perimeter[0][1]) * this.blockS + this.panelHeight);
 		for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
-			c.lineTo((tmpPotTopLeft.col + this.currentTet.perimeter[row][0]) * this.block_s, (tmpPotTopLeft.row + this.currentTet.perimeter[row][1]) * this.block_s + this.panel_height);
+			c.lineTo((tmpPotTopLeft.col + this.currentTet.perimeter[row][0]) * this.blockS, (tmpPotTopLeft.row + this.currentTet.perimeter[row][1]) * this.blockS + this.panelHeight);
 		}
 		c.closePath();
 		c.lineWidth = 2;
@@ -336,9 +264,9 @@ Game.prototype.draw = function () {
 	for (var tet = 0, aTLen = this.allTets.length;  tet < aTLen;  tet++) {
 		var currTet = this.allTets[tet];
 		c.beginPath();
-		c.moveTo((currTet.topLeft.col + currTet.perimeter[0][0]) * this.block_s, (currTet.topLeft.row + currTet.perimeter[0][1]) * this.block_s + this.panel_height);
+		c.moveTo((currTet.topLeft.col + currTet.perimeter[0][0]) * this.blockS, (currTet.topLeft.row + currTet.perimeter[0][1]) * this.blockS + this.panelHeight);
 		for (var row = 1, len = currTet.perimeter.length;  row < len;  row++) {
-			c.lineTo((currTet.topLeft.col + currTet.perimeter[row][0]) * this.block_s, (currTet.topLeft.row + currTet.perimeter[row][1]) * this.block_s + this.panel_height);
+			c.lineTo((currTet.topLeft.col + currTet.perimeter[row][0]) * this.blockS, (currTet.topLeft.row + currTet.perimeter[row][1]) * this.blockS + this.panelHeight);
 		}
 		c.closePath();
 		c.lineWidth = 2;
@@ -350,25 +278,49 @@ Game.prototype.draw = function () {
 	
 	// Draw Game Over text if game is over
 	if (this.gameOver) {
-		c.fillStyle = '#f00';
-		c.font = "bold 36px Arial";
-		c.fillText("Game Over", 3, 250);
-		c.lineWidth = 2;
-		c.strokeStyle = '#000';
-		c.strokeText("Game Over", 3, 250);
+		// gray tint
+		c.globalAlpha = 0.8;
+		c.fillStyle = "#333";
+		c.fillRect(0, 0, this.canvas.width, 2 * this.canvas.width);
+		c.globalAlpha = 1;
+		// game over text
+		c.fillStyle = '#f00'; c.font = "bold 32px Arial";
+		c.fillText("GAME OVER", 3, 180);
+		c.strokeStyle = '#000'; c.lineWidth = 1;
+		c.strokeText("GAME OVER", 3, 180);
+		// your score
+		c.fillStyle = '#fff'; c.font = "bold 18px Arial";
+		c.fillText("Your Score:", 5, 220);
+		c.fillStyle = '#f00'; c.font = "bold 19px Arial";
+		c.fillText(this.score.commaSeparate(), 14, 240);
+		c.globalAlpha = 0.5;
+		c.strokeStyle = '#000'; c.lineWidth = 1; c.font = "bold 18px Arial";
+		c.strokeText("Your Score:", 5, 220);
+		c.font = "bold 19px Arial";
+		c.strokeText(this.score.commaSeparate(), 14, 240);
+		c.globalAlpha = 1;
+		// personal highest score
+		c.fillStyle = '#fff'; c.font = "bold 17px Arial";
+		c.fillText("Personal Highest Score:", 5, 270);
+		c.fillStyle = '#f00'; c.font = "bold 19px Arial";
+		c.fillText(this.checkHighScore().commaSeparate(), 14, 290);
+		c.globalAlpha = 0.3;
+		c.strokeStyle = '#000'; c.lineWidth = 1; c.font = "bold 17px Arial";
+		c.strokeText("Personal Highest Score:", 5, 270);
+		c.font = "bold 19px Arial";
+		c.strokeText(this.checkHighScore().commaSeparate(), 14, 290);
+		c.globalAlpha = 1;
 	}
 }
 Game.prototype.createTet = function () {
-	//console.log('creating Tet');
 	if (this.nextTet === null) this.nextTet = new Tet(this);
 	if (this.newTet) {
 		this.currentTet = this.nextTet;
 		this.nextTet = new Tet(this);
 	}
-	//console.log(this.currentTet.shape);
 	this.newTet = false;
-	if (this.currentTet.checkBotCollision(this.currentTet.topLeft)) {
-		//console.log('Game Over');
+	// Display Game Over
+	if (this.currentTet.doesTetCollideBot(this.currentTet.topLeft)) {
 		this.nextTet = this.currentTet;
 		this.gameOver = true;
 		this.newTet = true;
@@ -398,7 +350,7 @@ Game.prototype.getLanded = function (tet) {
 			if (aT[i] === this.currentTet || aT[i] === tet) continue;
 			for (var row = 0, rLen = aT[i].shape.length;  row < rLen;  row++) {
 				for (var col = 0, cLen = aT[i].shape[row].length;  col < cLen;  col++) {
-					if (aT[i].shape[row][col] != 0) {
+					if (aT[i].shape[row][col] !== 0) {
 						this.landed[row + aT[i].topLeft.row][col + aT[i].topLeft.col] = 1;
 					}
 				}
@@ -424,6 +376,33 @@ Game.prototype.alterShapes = function (fullRows) {
 	this.tetsToRemove = [];
 	this.updateLanded = true;
 }
+Game.prototype.getHighScore = function (c_name) {
+	// from http://www.w3schools.com/js/js_cookies.asp
+	var c_value = document.cookie, c_start = c_value.indexOf(" " + c_name + "=");
+	if (c_start === -1) c_start = c_value.indexOf(c_name + "=");
+	if (c_start === -1) c_value = null;
+	else {
+		c_start = c_value.indexOf("=", c_start) + 1;
+		var c_end = c_value.indexOf(";", c_start);
+		if (c_end === -1) c_end = c_value.length;
+		c_value = unescape(c_value.substring(c_start, c_end));
+	}
+	return c_value;
+}
+Game.prototype.setHighScore = function (c_name, value, exdays) {
+	// from http://www.w3schools.com/js/js_cookies.asp
+	var exdate = new Date(), c_value;
+	exdate.setDate(exdate.getDate() + exdays);
+	c_value = escape(value) + ((exdays === null) ? "" : "; expires=" + exdate.toUTCString());
+	document.cookie = c_name + "=" + c_value;
+}
+Game.prototype.checkHighScore = function () {
+	var score = this.getHighScore("highScore");
+	if (score === null || this.score > score) {
+		this.setHighScore("highScore", this.score, 365);
+	}
+	return Math.max(score, this.score);
+}
 
 /**
  * This function creates a Tet class intended to be instantiated by "new Tet()".
@@ -437,21 +416,18 @@ Game.prototype.alterShapes = function (fullRows) {
  * @property {Number} topLeft.row Row position of Tet on board.
  * @property {Number} topLeft.col Column position of Tet on board.
  * @property {Array[Array[Number]]} shape Shape of Tet, e.g. _shape = [[1,1,1,1]] is horizontal I Tetrimino where [[1],[1],[1],[1]] is vertical I Tet.  Number in range [1..7] determines color (found from tetColor in draw()). Number of 0 indicates empty space.
- * @property {Array[Array[Number]]} perimeter Perimeter of Tet, e.g. _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet.  Imagine Tetriminos being expressed as 4 "blocks," each block's side would be _s pixels in magnitude, where _s is the variable block_s defined in index.php.  Therefore, we can determine its perimeter by taking the "(x, y) coordinates" in each "row" of _perimeter, and multiplying each x and y value by _s.
+ * @property {Array[Array[Number]]} perimeter Perimeter of Tet, e.g. _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet.  Imagine Tetriminos being expressed as 4 "blocks," each block's side would be _s pixels in magnitude, where _s is the variable blockS defined in index.php.  Therefore, we can determine its perimeter by taking the "(x, y) coordinates" in each "row" of _perimeter, and multiplying each x and y value by _s.
  */
 function Tet (game, type) {
-	if ( !(this instanceof arguments.callee) ) // force instantiation
-		return new Tet(game, type);
-	//console.log(type);
+	if (!(this instanceof arguments.callee)) return new Tet(game, type); // force instantiation
 	this.game = game;
 	if (type >= -1 && type < 7) this.type = type;
 	else this.type = parseInt(Math.floor(Math.random()*7));
 	this.rotation = 0;
-	if (type > -1 || type == undefined) {
+	if (this.type > -1) {
 		this.topLeft = { row: 0, col: 4 };
 		this.setShape(this.getShapeMatrix(0));
 	}
-	//console.log(this.shape);
 }
 /**
  * This function takes in a Tet type and rotation then outputs its shape matrix.
@@ -491,7 +467,6 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 // 1) Remove trailing zeros from each row, e.g. [1,0] becomes [1]
 // 2) If new shape is one row, remove leading zeros, e.g. [0,1] becomes [1]
 Tet.prototype.calcPerimeter = function () {
-	//console.log('calculating perimeter, rot: ' + this.rotation);
 	var periMatrix = [
 		[ [[1]],               [[0,0],[0,1],[1,1],[1,0]] ], // fragments
 		[ [[1,1]],             [[0,0],[0,1],[2,1],[2,0]] ],
@@ -525,17 +500,17 @@ Tet.prototype.calcPerimeter = function () {
 	for (var pRow = 0, pLen = periMatrix.length;  pRow < pLen;  pRow++) {
 		checkNextShape = false;
 		for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
-			if (rLen != periMatrix[pRow][0].length) {
+			if (rLen !== periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
 			}
 			if (checkNextShape) break;
 			for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
-				if (this.shape[row].length != periMatrix[pRow][0][row].length) {
+				if (this.shape[row].length !== periMatrix[pRow][0][row].length) {
 					checkNextShape = true;
 					break;
 				}
-				if (this.shape[row][col] == periMatrix[pRow][0][row][col]) {
+				if (this.shape[row][col] === periMatrix[pRow][0][row][col]) {
 					continue;
 				}
 				checkNextShape = true;
@@ -544,13 +519,10 @@ Tet.prototype.calcPerimeter = function () {
 		}
 		if (!checkNextShape) {
 			// if it gets to this point, we found our point array
-			//console.log('found perimeter ' + pRow);
-			//console.log(periMatrix[pRow][1]);
 			this.perimeter = periMatrix[pRow][1];
 			return;
 		}
 	}
-	//console.log(this.shape);
 	this.perimeter = [];
 }
 Tet.prototype.setShape = function (shape) {
@@ -558,7 +530,6 @@ Tet.prototype.setShape = function (shape) {
 	this.calcPerimeter();
 }
 Tet.prototype.rotate = function () { // by default, always clockwise
-	//console.log('rotation: ' + this.rotation);
 	var landed = this.game.getLanded(), potRot, potShape;
 	if (this.rotation >= 3) potRot = 0;
 	else potRot = this.rotation + 1;
@@ -579,7 +550,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 					//console.log('below playing field');
 					return false;
 				}
-				if (this.game.landed[row + this.topLeft.row][col + this.topLeft.col] !== 0) {
+				if (landed[row + this.topLeft.row][col + this.topLeft.col] !== 0) {
 					//console.log('rotate: space is taken');
 					return false;
 				}
@@ -587,12 +558,10 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 		}
 	}
 	this.rotation = potRot;
-	this.shape = potShape;
-	this.calcPerimeter();
+	this.setShape(potShape);
 	return true;
 }
-Tet.prototype.checkBotCollision = function (potentialTopLeft) {
-	//console.log('checking bot coll');
+Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
 	var landed = this.game.getLanded(this);
 	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
@@ -610,7 +579,7 @@ Tet.prototype.checkBotCollision = function (potentialTopLeft) {
 	}
 	return false;
 }
-Tet.prototype.checkSideCollision = function (potentialTopLeft) {
+Tet.prototype.doesTetCollideSide = function (potentialTopLeft) {
 	var landed = this.game.getLanded();
 	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
@@ -634,17 +603,15 @@ Tet.prototype.checkSideCollision = function (potentialTopLeft) {
 }
 Tet.prototype.moveLeft = function () {
 	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col - 1 };
-	if (!this.checkSideCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
+	if (!this.doesTetCollideSide(potentialTopLeft)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveRight = function () {
 	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
-	if (!this.checkSideCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
+	if (!this.doesTetCollideSide(potentialTopLeft)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveDown = function () {
-	//console.log('moving down');
 	var potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };
-	//console.log(potentialTopLeft);
-	if (!this.checkBotCollision(potentialTopLeft)) this.topLeft = potentialTopLeft;
+	if (!this.doesTetCollideBot(potentialTopLeft)) this.topLeft = potentialTopLeft;
 	else {
 		this.game.newTet = true;
 		this.game.currentTet = null;
@@ -653,7 +620,6 @@ Tet.prototype.moveDown = function () {
 	}
 }
 Tet.prototype.collided = function () {
-	//console.log('tet down collision!');
 	var landed = this.game.getLanded(), isFilled, fullRows = [], fRLen;
 	for (var row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
 		isFilled = true;
@@ -664,7 +630,7 @@ Tet.prototype.collided = function () {
 	this.game.updateLanded = true;
 	fRLen = fullRows.length;
 	if (fRLen === 0) return;
-	this.game.score += Math.pow(fRLen, 1 + (fRLen - 1) * 0.1) * 10000;
+	this.game.score += Math.pow(fRLen, 1 + (fRLen - 1) * 0.1) * 10000; // Scale the point rewarded for filling rows to benefit those that break more at one time.
 	this.game.alterShapes(fullRows);
 	this.game.updateLanded = true;
 	// perform animations
@@ -677,7 +643,7 @@ Tet.prototype.collided = function () {
 			for (tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;  tet < tLen;  tet++) {
 				if (movingTets.indexOf(aT[tet], 0) > -1 || (aT[tet] === that.game.currentTet && that.game.newTet !== true)) continue;
 				potTL = { row: aT[tet].topLeft.row + 1, col: aT[tet].topLeft.col };
-				if (!aT[tet].checkBotCollision(potTL)) {
+				if (!aT[tet].doesTetCollideBot(potTL)) {
 					aT[tet].topLeft = potTL;
 					movingTets.push(aT[tet]);
 					tetsMoved = true;
@@ -690,7 +656,7 @@ Tet.prototype.collided = function () {
 			clearInterval(moveLoop);
 			that.collided();
 		}
-	}, 150);
+	}, 200);
 }
 Tet.prototype.cleanShape = function (o) {
 	var shape = o.shape, topLeft = o.topLeft, done = false;
@@ -736,8 +702,6 @@ Tet.prototype.updateTet = function () {
 	}
 	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
 	if (q.length === 0) this.game.tetsToRemove.push(this.game.allTets.indexOf(this)); // Remove this Tet from allTets if shape is a zero'd matrix (Tet completely gone)
-	
-	//console.log(q);
 	for (var qs = 0, len = q.length;  qs < len;  qs++) {
 		var tmp = this.cleanShape(q[qs]);
 		if (qs === 0) {
@@ -749,18 +713,17 @@ Tet.prototype.updateTet = function () {
 			newTet.type = this.type;
 			newTet.topLeft = tmp.topLeft;
 			newTet.setShape(tmp.shape);
-			//this.game.fallingClumps.push(newTet);
 			this.game.allTets.push(newTet);
 		}
 	}
 }
 Tet.prototype.alterShape = function (fullRows) {
-	//console.log('altering shape');
 	for (var i = 0, len = fullRows.length, row;  i < len;  i++) {
 		row = fullRows[i] - this.topLeft.row;
 		if (row < 0 || row > this.shape.length - 1) continue;
-		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++)
+		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
 			this.shape[row][col] = 0;
+		}
 	}
 	this.updateTet();
 }
