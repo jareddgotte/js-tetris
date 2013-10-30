@@ -22,6 +22,7 @@ strong, b {
 	color: #000;
 	margin: 4px auto;
 	width: 712px;
+	overflow: hidden;
 }
 #main #tetris_banner {
 	text-align: center;
@@ -42,12 +43,14 @@ strong, b {
 	float: left;
 }
 .panel h2 {
+	line-height: 1.5;
 	text-align: center;
 }
 .panel h3 {
 	display: block;
 	float: left;
 	line-height: 1.5;
+	margin-bottom: 10px;
 }
 .panel ul li {
 	margin-left: 3px;
@@ -55,7 +58,7 @@ strong, b {
 	overflow: hidden;
 }
 /* Leading dots trick from http://www.w3.org/Style/Examples/007/leaders.en.html */
-.panel ul li div:before {
+.panel#public_controls ul li div:before {
 	float: left;
 	width: 0;
 	white-space: nowrap;
@@ -65,22 +68,28 @@ strong, b {
 		". . . . . . . . . . . . . . . . . . . . "
 		". . . . . . . . . . . . . . . . . . . . ";
 }
-.panel ul li div, .panel ul li h3:first-child {
+.panel#public_controls ul li div, .panel ul li h3:first-child {
 	float: left;
 	width: 130px;
 	padding-left: 10px;
 	overflow: hidden;
 }
-.panel ul li span:first-child {
+.panel#public_controls ul li span:first-child {
 	background: white;
 }
-.panel ul li span {
+.panel#public_controls ul li span {
 	font-size: .9em;
 	padding-left: 5px;
+}
+.panel#high_scores ol {
+	list-style-type: lower-roman;
+	margin-left: 36px;
+}
+.panel#high_scores ol li {
+	line-height: 1.4;
 }
 #footer {
 	overflow: hidden;
 	margin: 4px auto;
 	width: 712px;
-	padding: 3px;
 }

@@ -15,7 +15,7 @@
 <script src="js/TestCase.js"></script>
 <script>
 window.onload = function() {
-	Game('canvas');
+	Game('canvas', 'high_score_list', 1);
 }
 </script>
 </head>
@@ -33,16 +33,19 @@ window.onload = function() {
 			<li><div><span>Move Right</span></div><span><b>Right</b> Arrow </span></li>
 			<li><div><span>Move Down</span></div><span><b>Down</b> Arrow </span></li>
 			<li><div><span>Instantly Move Down</span></div><span><b>Space</b> Bar</span></li>
+			<br>
 			<li><div><span>Pause Game</span></div><span><b>S</b> or <b>P</b> Key</span></li>
 			<li><div><span>Restart Game</span></div><span><b>R</b> Key</span></li>
 		</ul>
 	</div><!--panel-->
 	<canvas id="canvas"></canvas> 
-	<div class="panel" id="dev_controls">
+	<div class="panel" id="high_scores">
+		<h2>High Scores</h2>
+		<ol id="high_score_list"></ol>
 	</div><!--panel-->
 </div><!--main-->
 <div id="footer">
-	<span>&copy; 2013 Jared Gotte. Apache License 2.0.</span>
+	<span>&copy; 2013 <a href="http://www.jaredgotte.com" target="_blank">Jared Gotte</a>. Apache License 2.0.</span>
 </div><!--footer-->
 
 </body>

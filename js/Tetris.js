@@ -16,11 +16,11 @@
  * landed Tet:  Tet that has landed and is no longer in control by user.
  */
 
-function Game (canvas_id) {
-	if (!(this instanceof arguments.callee)) return new Game(canvas_id); // force instantiation
+function Game (canvas_id, high_scores_list_id, dev_mode) {
+	if (!(this instanceof arguments.callee)) return new Game(canvas_id, high_scores_list_id, dev_mode); // force instantiation
 	
 	// Developer's Mode
-	this.devModeOn = false;
+	this.devModeOn = dev_mode ? true : false;
 	
 	// public vars
 	this.BOARD_ROW_NUM = 16; // Tetris standard is to have 10 horizontal blocks by 16 vertical blocks
@@ -43,36 +43,28 @@ function Game (canvas_id) {
 	this.canvas.height = 2 * this.canvasWidth;
 	this.panelHeight = Math.round((2 - this.BOARD_ROW_NUM / this.BOARD_COL_NUM) * this.canvasWidth);
 	this.landed = [];
-	this.paused = false;
+	this.paused = true;
+	this.highScoresListId = high_scores_list_id;
 
 	// init functions
+	this.displayHighScores();
 	this.createTet();
-	this.tetDownLoop();
-	this.handleDocumentEvents(this);
+	//this.tetDownLoop();
+	this.handleEvents(this);
+	//this.paused = true;
 }
-Game.prototype.handleDocumentEvents = function (that) {
-	// Handle page visibility change
-	// From https://developer.mozilla.org/en-US/docs/Web/Guide/User_experience/Using_the_Page_Visibility_API?redirectlocale=en-US&redirectslug=DOM%2FUsing_the_Page_Visibility_API
-	var hidden, visibilityChange;
-	if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support
-		hidden = "hidden";
-		visibilityChange = "visibilitychange";
-	} else if (typeof document.mozHidden !== "undefined") {
-		hidden = "mozHidden";
-		visibilityChange = "mozvisibilitychange";
-	} else if (typeof document.msHidden !== "undefined") {
-		hidden = "msHidden";
-		visibilityChange = "msvisibilitychange";
-	} else if (typeof document.webkitHidden !== "undefined") {
-		hidden = "webkitHidden";
-		visibilityChange = "webkitvisibilitychange";
-	}
-	function handleVisibilityChange() {
-		if (document[hidden]) {
-			clearInterval(that.loop);
-			that.paused = true;
-			that.draw();
-		} else {
+Game.prototype.handleEvents = function (that) {
+	// Pause if we lose focus of the game
+	// We don't care about the Page Visibility API anymore because we don't have a resource intensive game
+	var pausedBeforeBlur;
+	window.onblur = function () {
+		pausedBeforeBlur = that.paused ? true : false;
+		clearInterval(that.loop);
+		that.paused = true;
+		that.draw();
+	};
+	window.onfocus = function () {
+		if (!pausedBeforeBlur) {
 			if (!that.gameOver) {
 				that.tetDownLoop();
 				that.dropOnce = false;
@@ -80,8 +72,7 @@ Game.prototype.handleDocumentEvents = function (that) {
 			that.paused = false;
 			that.draw();
 		}
-	}
-	document.addEventListener(visibilityChange, handleVisibilityChange, false);
+	};
 	
 	// Handle key events
 	document.onkeydown = function(e) { // http://www.javascripter.net/faq/keycodes.htm for keycodes
@@ -172,7 +163,8 @@ Game.prototype.handleDocumentEvents = function (that) {
 				break;
 			case 72: // h to reset high score to zero
 				if (that.devModeOn) {
-					that.setHighScore("highScore", 0, 365);
+					that.setHighScores([0,0,0,0,0,0,0,0,0,0]);
+					that.displayHighScores();
 					that.draw();
 				}
 				break;
@@ -189,6 +181,13 @@ Number.prototype.commaSeparate = function () { // comma separate number
 	}
 	else if (tmp > 999999999999999) tmp = tmp.toExponential(10);
 	return tmp;
+}
+Game.prototype.displayHighScores = function () {
+	var highScores = this.getHighScores(), html = '';
+	for (var i = 0, len = highScores.length;  i < len;  i++) {
+		html += '<li>' + highScores[i].commaSeparate() + '</li>';
+	}
+	document.getElementById(this.highScoresListId).innerHTML = html;
 }
 Game.prototype.draw = function () {
 	// Keys respectively reflect the HTML color code of Tets: I, J, L, O, S, T, Z
@@ -239,6 +238,12 @@ Game.prototype.draw = function () {
 	c.lineWidth = 2;
 	c.strokeStyle = "#000";
 	c.stroke();
+	// dev mode
+	if (this.devModeOn) {
+		c.fillStyle = '#0a0';
+		c.font = "15px Arial";
+		c.fillText("DEV", 166, 74);
+	}
 	
 	// Draw living Tet "shadow"
 	if (!this.newTet) {
@@ -300,20 +305,26 @@ Game.prototype.draw = function () {
 		c.strokeText(this.score.commaSeparate(), 14, 240);
 		c.globalAlpha = 1;
 		// personal highest score
+		var highscores = this.checkHighScore();
 		c.fillStyle = '#fff'; c.font = "bold 17px Arial";
 		c.fillText("Personal Highest Score:", 5, 270);
 		c.fillStyle = '#f00'; c.font = "bold 19px Arial";
-		c.fillText(this.checkHighScore().commaSeparate(), 14, 290);
+		c.fillText(highscores[0].commaSeparate(), 14, 290);
 		c.globalAlpha = 0.3;
 		c.strokeStyle = '#000'; c.lineWidth = 1; c.font = "bold 17px Arial";
 		c.strokeText("Personal Highest Score:", 5, 270);
 		c.font = "bold 19px Arial";
-		c.strokeText(this.checkHighScore().commaSeparate(), 14, 290);
+		c.strokeText(highscores[0].commaSeparate(), 14, 290);
 		c.globalAlpha = 1;
+		this.displayHighScores();
 	}
 }
 Game.prototype.createTet = function () {
-	if (this.nextTet === null) this.nextTet = new Tet(this);
+	if (this.nextTet === null) {
+		var t = parseInt(Math.floor(Math.random()*7));
+		if (t === 4 || t === 6) t--;
+		this.nextTet = new Tet(this, t);
+	}
 	if (this.newTet) {
 		this.currentTet = this.nextTet;
 		this.nextTet = new Tet(this);
@@ -376,7 +387,7 @@ Game.prototype.alterShapes = function (fullRows) {
 	this.tetsToRemove = [];
 	this.updateLanded = true;
 }
-Game.prototype.getHighScore = function (c_name) {
+Game.prototype.getCookie = function (c_name) {
 	// from http://www.w3schools.com/js/js_cookies.asp
 	var c_value = document.cookie, c_start = c_value.indexOf(" " + c_name + "=");
 	if (c_start === -1) c_start = c_value.indexOf(c_name + "=");
@@ -389,19 +400,35 @@ Game.prototype.getHighScore = function (c_name) {
 	}
 	return c_value;
 }
-Game.prototype.setHighScore = function (c_name, value, exdays) {
+Game.prototype.setCookie = function (c_name, value, exdays) {
 	// from http://www.w3schools.com/js/js_cookies.asp
 	var exdate = new Date(), c_value;
 	exdate.setDate(exdate.getDate() + exdays);
 	c_value = escape(value) + ((exdays === null) ? "" : "; expires=" + exdate.toUTCString());
 	document.cookie = c_name + "=" + c_value;
 }
-Game.prototype.checkHighScore = function () {
-	var score = this.getHighScore("highScore");
-	if (score === null || this.score > score) {
-		this.setHighScore("highScore", this.score, 365);
+Game.prototype.getHighScores = function () {
+	var tmp = JSON.parse(this.getCookie("highScores"));
+	if (tmp === null) {
+		tmp = [this.score,0,0,0,0,0,0,0,0,0];
+		this.setHighScores(tmp);
 	}
-	return Math.max(score, this.score);
+	return tmp;
+}
+Game.prototype.setHighScores = function (v) {
+	this.setCookie("highScores", JSON.stringify(v), 365);
+}
+Game.prototype.checkHighScore = function () {
+	var highScores = this.getHighScores();
+	for (var i = 0, len = highScores.length;  i < len;  i++) {
+		if (this.score > highScores[i]) {
+			highScores.splice(i, 0, this.score);
+			break;
+		}
+	}
+	if (highScores.length > 5) highScores.pop();
+	this.setHighScores(highScores);
+	return highScores;
 }
 
 /**
