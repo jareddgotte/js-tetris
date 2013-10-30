@@ -15,7 +15,7 @@
 <script src="js/TestCase.js"></script>
 <script>
 window.onload = function() {
-	Game('canvas', 'high_score_list', 1);
+	Game('canvas', 'high_score_list');
 }
 </script>
 </head>

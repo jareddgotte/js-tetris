@@ -1,7 +1,6 @@
 // JSDoc Wiki: http://en.wikipedia.org/wiki/JSDoc
 // jsdoc-toolkit references: http://code.google.com/p/jsdoc-toolkit/wiki/TagReference
 // JS Data Types: http://www.w3schools.com/js/js_datatypes.asp
-// JS Try Catch Throw Errors Tut: http://www.w3schools.com/js/js_errors.asp
 
 // The collision detection is mostly inspired from the article: http://gamedev.tutsplus.com/tutorials/implementation/implementing-tetris-collision-detection/ (by Michael James Williams on Oct 6th 2012)
 // The reason why I did not entirely come up with my own algorithms for everything is for the sake of time
@@ -49,14 +48,12 @@ function Game (canvas_id, high_scores_list_id, dev_mode) {
 	// init functions
 	this.displayHighScores();
 	this.createTet();
-	//this.tetDownLoop();
 	this.handleEvents(this);
-	//this.paused = true;
 }
 Game.prototype.handleEvents = function (that) {
 	// Pause if we lose focus of the game
 	// We don't care about the Page Visibility API anymore because we don't have a resource intensive game
-	var pausedBeforeBlur;
+	var pausedBeforeBlur = true;
 	window.onblur = function () {
 		pausedBeforeBlur = that.paused ? true : false;
 		clearInterval(that.loop);
@@ -65,10 +62,7 @@ Game.prototype.handleEvents = function (that) {
 	};
 	window.onfocus = function () {
 		if (!pausedBeforeBlur) {
-			if (!that.gameOver) {
-				that.tetDownLoop();
-				that.dropOnce = false;
-			}
+			if (!that.gameOver) that.tetDownLoop();
 			that.paused = false;
 			that.draw();
 		}
@@ -77,8 +71,8 @@ Game.prototype.handleEvents = function (that) {
 	// Handle key events
 	document.onkeydown = function(e) { // http://www.javascripter.net/faq/keycodes.htm for keycodes
 		switch (e.keyCode) {
-			case 32: //console.log('dropping');
-				if (!that.newTet && !that.paused) {
+			case 32: // space to move living Tet all the way down
+				if (!that.newTet && !that.paused || that.devModeOn) {
 					while (!that.newTet) {
 						that.currentTet.moveDown();
 					}
@@ -86,32 +80,32 @@ Game.prototype.handleEvents = function (that) {
 					that.tetDownLoop();
 				}
 				break;
-			case 38: //console.log('rotating');
-				if (!that.newTet && !that.paused) {
+			case 38: // up arrow to rotate Tet clockwise
+				if (!that.newTet && !that.paused || that.devModeOn) {
 					that.currentTet.rotate();
 					that.draw();
 				}
 				break;
-			case 37: //console.log('moving left');
-				if (!that.newTet && !that.paused) {
+			case 37: // left arrow to move Tet left
+				if (!that.newTet && !that.paused || that.devModeOn) {
 					that.currentTet.moveLeft();
 					that.draw();
 				}
 				break;
-			case 39: //console.log('moving right');
-				if (!that.newTet && !that.paused) {
+			case 39: // right arrow to move Tet right
+				if (!that.newTet && !that.paused || that.devModeOn) {
 					that.currentTet.moveRight();
 					that.draw();
 				}
 				break;
-			case 40: //console.log('moving down');
-				if (!that.newTet && !that.paused) {
+			case 40: // down arrow to move Tet down
+				if (!that.newTet && !that.paused || that.devModeOn) {
 					var skip = false;
 					if (that.newTet) skip = true;
 					if (!skip) clearInterval(that.loop);
 					that.currentTet.moveDown();
 					that.draw();
-					if (!skip) that.tetDownLoop();
+					if (!skip && !that.paused) that.tetDownLoop();
 				}
 				break;
 			case 80: case 83: // p for pause, s for stop (they do same thing)
@@ -131,16 +125,22 @@ Game.prototype.handleEvents = function (that) {
 				break;
 			case 82: // r for reset
 				that.allTets = [];
+				clearInterval(that.loop);
 				that.currentTet = null;
 				that.gameOver = false;
 				that.newTet = true;
 				that.nextTet = null;
-				that.paused = false;
+				that.paused = true;
 				that.score = 0;
 				that.createTet();
-				that.tetDownLoop();
 				break;
 			// Developer's Controls
+			case 35: // end key to move Tet up
+				if (that.devModeOn) {
+					if (that.currentTet.topLeft.row > 0) that.currentTet.topLeft.row--;
+					that.draw();
+				}
+				break;
 			case 48: case 49: case 50: case 51: case 52: // test cases found in TestCase.js
 			case 53: case 54: case 55: case 56: case 57: // number keys 0 to 9 (not numpad)
 				if (that.devModeOn) {
@@ -167,6 +167,10 @@ Game.prototype.handleEvents = function (that) {
 					that.displayHighScores();
 					that.draw();
 				}
+				break;
+			case 192: // tilde key to toggle dev mode
+				that.devModeOn = that.devModeOn ? false : true;
+				that.draw();
 				break;
 			default:
 				console.log('unrecognized key: ' + e.keyCode);
@@ -245,7 +249,7 @@ Game.prototype.draw = function () {
 		c.fillText("DEV", 166, 74);
 	}
 	
-	// Draw living Tet "shadow"
+	// Draw living Tet "shadow" at bottom and rotation
 	if (!this.newTet) {
 		var tmpPotTopLeft = { row: this.currentTet.topLeft.row + 1, col: this.currentTet.topLeft.col };
 		while (!this.currentTet.doesTetCollideBot(tmpPotTopLeft)) {
@@ -263,6 +267,26 @@ Game.prototype.draw = function () {
 		c.fill();
 		c.strokeStyle = "#ddd";
 		c.stroke();
+
+		// draw pivot shadow
+		if (this.currentTet.pivot > 0) {
+			potPerimeter = this.currentTet.doesNotTetPivotCollide();
+			if (potPerimeter !== false) {
+				c.beginPath();
+				c.moveTo((this.currentTet.topLeft.col + potPerimeter[0][0] + this.currentTet.pivot) * this.blockS, (this.currentTet.topLeft.row + potPerimeter[0][1]) * this.blockS + this.panelHeight);
+				for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
+					c.lineTo((this.currentTet.topLeft.col + potPerimeter[row][0] + this.currentTet.pivot) * this.blockS, (this.currentTet.topLeft.row + potPerimeter[row][1]) * this.blockS + this.panelHeight);
+				}
+				c.closePath();
+				c.lineWidth = 2;
+				c.globalAlpha = 0.5;
+				c.fillStyle = '#eee';
+				c.fill();
+				c.strokeStyle = "#ddd";
+				c.stroke();
+				c.globalAlpha = 1;
+			}
+		}
 	}
 	
 	// Draw all Tets
@@ -347,7 +371,7 @@ Game.prototype.tetDownLoop = function () {
 	this.loop = setInterval(function(){
 		if (that.dropOnce && that.newTet) clearInterval(that.loop);
 		if (that.newTet) that.createTet();
-		else that.currentTet.moveDown();
+		else if (!that.paused) that.currentTet.moveDown();
 		that.draw();
 	}, that.dropInterval);
 }
@@ -450,8 +474,9 @@ function Tet (game, type) {
 	this.game = game;
 	if (type >= -1 && type < 7) this.type = type;
 	else this.type = parseInt(Math.floor(Math.random()*7));
-	this.rotation = 0;
 	if (this.type > -1) {
+		this.rotation = 0;
+		this.pivot = 0;
 		this.topLeft = { row: 0, col: 4 };
 		this.setShape(this.getShapeMatrix(0));
 	}
@@ -477,6 +502,8 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 		[ [[1,1,1],[0,1  ]], [[0,1],[1,1],[0,1]], [[0,1  ],[1,1,1]], [[1  ],[1,1],[1  ]] ], // T
 		[ [[1,1  ],[0,1,1]], [[0,1],[1,1],[1  ]] ], // Z
 	], m = matrixMatrix[this.type];
+	this.pivotMax = this.type === 0 ? 3 : 1; // I needs 3 pivots where every other Tet needs 1
+	if (this.type === 3) this.pivotMax = 0; // except O
 	switch (m.length) {
 		case 1:
 			return m[0];
@@ -493,7 +520,7 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 // Upon breaking up a tet, make sure these conditions are met on its new shape:
 // 1) Remove trailing zeros from each row, e.g. [1,0] becomes [1]
 // 2) If new shape is one row, remove leading zeros, e.g. [0,1] becomes [1]
-Tet.prototype.calcPerimeter = function () {
+Tet.prototype.getPerimeter = function (shape) {
 	var periMatrix = [
 		[ [[1]],               [[0,0],[0,1],[1,1],[1,0]] ], // fragments
 		[ [[1,1]],             [[0,0],[0,1],[2,1],[2,0]] ],
@@ -526,18 +553,18 @@ Tet.prototype.calcPerimeter = function () {
 	], checkNextShape;
 	for (var pRow = 0, pLen = periMatrix.length;  pRow < pLen;  pRow++) {
 		checkNextShape = false;
-		for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
+		for (var row = 0, rLen = shape.length;  row < rLen;  row++) {
 			if (rLen !== periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
 			}
 			if (checkNextShape) break;
-			for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
-				if (this.shape[row].length !== periMatrix[pRow][0][row].length) {
+			for (var col = 0, cLen = shape[row].length;  col < cLen;  col++) {
+				if (shape[row].length !== periMatrix[pRow][0][row].length) {
 					checkNextShape = true;
 					break;
 				}
-				if (this.shape[row][col] === periMatrix[pRow][0][row][col]) {
+				if (shape[row][col] === periMatrix[pRow][0][row][col]) {
 					continue;
 				}
 				checkNextShape = true;
@@ -546,20 +573,18 @@ Tet.prototype.calcPerimeter = function () {
 		}
 		if (!checkNextShape) {
 			// if it gets to this point, we found our point array
-			this.perimeter = periMatrix[pRow][1];
-			return;
+			return periMatrix[pRow][1];
 		}
 	}
-	this.perimeter = [];
+	return [];
 }
 Tet.prototype.setShape = function (shape) {
 	this.shape = shape;
-	this.calcPerimeter();
+	this.perimeter = this.getPerimeter(shape);
 }
 Tet.prototype.rotate = function () { // by default, always clockwise
-	var landed = this.game.getLanded(), potRot, potShape;
-	if (this.rotation >= 3) potRot = 0;
-	else potRot = this.rotation + 1;
+	var landed = this.game.getLanded(), potRot = this.rotation, potShape;
+	potRot = potRot < 3 ? potRot + 1 : 0;
 	potShape = this.getShapeMatrix(potRot);
 	// check for potential collisions
 	for (var row = 0, rLen = potShape.length;  row < rLen;  row++) {
@@ -584,9 +609,43 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 			}
 		}
 	}
+	this.topLeft.col += this.pivot;
+	this.pivot = 0;
 	this.rotation = potRot;
 	this.setShape(potShape);
 	return true;
+}
+Tet.prototype.doesNotTetPivotCollide = function () {
+	var potRot = this.rotation, potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + this.pivot }, potShape, landed = this.game.getLanded(this);
+	potRot = potRot < 3 ? potRot + 1 : 0;
+	potShape = this.getShapeMatrix(potRot);
+	for (var row = 0, rLen = potShape.length;  row < rLen;  row++) {
+		for (var col = 0, cLen = potShape[row].length;  col < cLen;  col++) {
+			if (potShape[row][col] !== 0) {
+				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
+					//console.log('below playing field');
+					return false;
+				}
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
+					//console.log('bot: space taken');
+					return false;
+				}
+				if (col + potentialTopLeft.col < 0) {
+					//console.log('left beyond playing field');
+					return false;
+				}
+				if (col + potentialTopLeft.col >= this.game.BOARD_COL_NUM) {
+					//console.log('right beyond playing field');
+					return false;
+				}
+				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
+					//console.log('side: space taken');
+					return false;
+				}
+			}
+		}
+	}
+	return this.getPerimeter(potShape);
 }
 Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
 	var landed = this.game.getLanded(this);
@@ -606,7 +665,7 @@ Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
 	}
 	return false;
 }
-Tet.prototype.doesTetCollideSide = function (potentialTopLeft) {
+Tet.prototype.doesTetCollideSide = function (potentialTopLeft, direction) {
 	var landed = this.game.getLanded();
 	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
 		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
@@ -617,10 +676,12 @@ Tet.prototype.doesTetCollideSide = function (potentialTopLeft) {
 				}
 				if (col + potentialTopLeft.col >= this.game.BOARD_COL_NUM) {
 					//console.log('right beyond playing field');
+					if (this.pivot < this.pivotMax && this.rotation % 2 === 0) this.pivot++;
 					return true;
 				}
 				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
 					//console.log('side: space taken');
+					if (direction) if (this.pivot < this.pivotMax && this.rotation % 2 === 0) this.pivot++;
 					return true;
 				}
 			}
@@ -629,12 +690,13 @@ Tet.prototype.doesTetCollideSide = function (potentialTopLeft) {
 	return false;
 }
 Tet.prototype.moveLeft = function () {
+	this.pivot = 0;
 	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col - 1 };
 	if (!this.doesTetCollideSide(potentialTopLeft)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveRight = function () {
 	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
-	if (!this.doesTetCollideSide(potentialTopLeft)) this.topLeft = potentialTopLeft;
+	if (!this.doesTetCollideSide(potentialTopLeft, 1)) this.topLeft = potentialTopLeft;
 }
 Tet.prototype.moveDown = function () {
 	var potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };

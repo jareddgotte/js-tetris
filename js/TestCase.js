@@ -155,13 +155,18 @@ Game.prototype.testCase = function (n) {
 			tmp.topLeft = { row: 11, col: 1 };
 			this.currentTet = tmp;
 			break;
+		case 6: // Adjust score beyond range
+			this.score = 1939999955999999;
+			this.draw();
+			return;
+			break;
 		default: // Do nothing
 			console.log('Test Case: ' + n + ' does not exist.  Resetting.');
 			this.currentTet = null;
 			this.dropOnce = false;
 			this.newTet = true;
 			this.nextTet = null;
-			this.paused = false;
+			this.paused = true;
 			return;
 	}
 
@@ -169,6 +174,6 @@ Game.prototype.testCase = function (n) {
 	// Do not change these vars
 	this.dropOnce = true;
 	this.newTet = false;
-	this.paused = true;
+	this.paused = false;
 	this.updateLanded = true;
 }
