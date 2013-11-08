@@ -1,3 +1,9 @@
+/**
+ * This method generates a test case so we can test our algorithms.
+ *
+ * @author Jared Gotte
+ * @param {Number} n This is the test case number we're going to use for our switch statement.
+ */
 Game.prototype.testCase = function (n) {
 	var tmp;
 	switch (n) {
