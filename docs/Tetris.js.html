@@ -1,4 +1,31 @@
-// JSDoc Wiki: http://en.wikipedia.org/wiki/JSDoc
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Tetris.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: Tetris.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>// JSDoc Wiki: http://en.wikipedia.org/wiki/JSDoc
 // jsdoc3 tags: http://usejsdoc.org/#JSDoc3_Tag_Dictionary
 // JS Data Types: http://www.w3schools.com/js/js_datatypes.asp
 // How to express JS data types: https://developers.google.com/closure/compiler/docs/js-for-compiler#types
@@ -20,7 +47,7 @@
  * This function creates a Game class intended to be instantiated by "new Game()".
  * Only one Game per page can work separately at the moment.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @class Represents all of the functions which generate and control the game board.  We use the {@link Tet} class to manipulate our Tets.
  * @param {string} canvasId - This is the id of the canvas element within the document from which this Game class was created.
  * @param {string} highScoresListId - This is the id of the list for which we are going to list out the user's past high scores.
@@ -32,8 +59,8 @@
  * @property {Tet} currentTet - This is the Tet that is falling and controlled by the user.
  * @property {Tet} nextTet - This is the Tet that is going to come out after our currentTet lands.
  * @property {boolean} updateLanded - If true, we should update our landed array to be used in collision detection.
- * @property {Array.<Tet>} allTets - This is the array of all Tets that are in the game.
- * @property {Array.<Tet>} tetsToRemove - This is the array of all Tets that need to be removed before being drawn.
+ * @property {Array.&lt;Tet>} allTets - This is the array of all Tets that are in the game.
+ * @property {Array.&lt;Tet>} tetsToRemove - This is the array of all Tets that need to be removed before being drawn.
  * @property {number} score - This is the score that we're going to use to display.
  * @property {boolean} updateScore - This is the boolean we check to see if we should update our high score list or not.
  * @property {number} dropInterval - This is the interval, in milliseconds, for which our currentTet is going to drop 1 block.
@@ -42,7 +69,7 @@
  * @property {number} blockS - This is the length of the side of each "block" on the game, in pixels.
  * @property {Element} canvas - This is the DOM element for which we are going to be drawing on.
  * @property {number} panelHeight - This is the height of the panel which houses our score, nextTet, and PAUSED/DEV text.
- * @property {Array.<Array.<number>>} landed - This is the array of array of numbers which we are going to populate with our allTets to be able to detect Tet collision.
+ * @property {Array.&lt;Array.&lt;number>>} landed - This is the array of array of numbers which we are going to populate with our allTets to be able to detect Tet collision.
  * @property {string} highScoresListId - This is the name of the high score list DOM element for which we are going to show our user their past high scores.
  */
 function Game (canvasId, highScoresListId, devMode) {
@@ -86,7 +113,7 @@ function Game (canvasId, highScoresListId, devMode) {
  * The 2 events for the window are onblur and onfocus.  These will pause the game when you leave the game window and resume it when you come back.
  * The event for the document listens for onkeydown events.  These basically allow the user to interact with the game.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Game.prototype.handleEvents = function () {
 	var that = this;
@@ -227,7 +254,7 @@ Game.prototype.handleEvents = function () {
 /**
  * This method is exclusively used in the handleEvents method.  We call it every time we want to check if our Tet can be moved with the space bar/up/right/left/down key.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @returns {boolean} If the Tet can move, based on the conditions within the function, then return true.
  */
 Game.prototype.canTetMove = function () {
@@ -236,12 +263,12 @@ Game.prototype.canTetMove = function () {
 /**
  * This method is used to get a floating point number and separate it with commas.  We also round the number to the nearest integer.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @returns {string} This is the comma separated number.
  */
 Number.prototype.commaSeparate = function () { // comma separate number
 	var tmp = Math.floor(this);
-	if (tmp <= 99999999999999) {
+	if (tmp &lt;= 99999999999999) {
 		while (/(\d+)(\d{3})/.test(tmp.toString())) // from http://stackoverflow.com/a/12947816
 			tmp = tmp.toString().replace(/(\d+)(\d{3})/, '$1' + ','+'$2');
 	}
@@ -251,19 +278,19 @@ Number.prototype.commaSeparate = function () { // comma separate number
 /**
  * This method updates the high score list that is displayed on the web page.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Game.prototype.displayHighScores = function () {
 	var highScores = this.getHighScores(), html = '';
-	for (var i = 0, len = highScores.length;  i < len;  i++) {
-		html += '<li>' + highScores[i].commaSeparate() + '</li>';
+	for (var i = 0, len = highScores.length;  i &lt; len;  i++) {
+		html += '&lt;li>' + highScores[i].commaSeparate() + '&lt;/li>';
 	}
 	document.getElementById(this.highScoresListId).innerHTML = html;
 }
 /**
  * This method draws everything to the canvas.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Game.prototype.draw = function () {
 	// Keys respectively reflect the HTML color code of Tets: I, J, L, O, S, T, Z
@@ -288,7 +315,7 @@ Game.prototype.draw = function () {
 	c.fillText("Next:", 35, 50);
 	c.beginPath();
 	c.moveTo((this.nextTet.topLeft.col + this.nextTet.perimeter[0][0]) * this.blockS, (this.nextTet.topLeft.row + this.nextTet.perimeter[0][1]) * this.blockS + 37);
-	for (var row = 1, len = this.nextTet.perimeter.length;  row < len;  row++) {
+	for (var row = 1, len = this.nextTet.perimeter.length;  row &lt; len;  row++) {
 		c.lineTo((this.nextTet.topLeft.col + this.nextTet.perimeter[row][0]) * this.blockS, (this.nextTet.topLeft.row + this.nextTet.perimeter[row][1]) * this.blockS + 37);
 	}
 	c.closePath();
@@ -330,7 +357,7 @@ Game.prototype.draw = function () {
 		tmpPotTopLeft.row--;
 		c.beginPath();
 		c.moveTo((tmpPotTopLeft.col + this.currentTet.perimeter[0][0]) * this.blockS, (tmpPotTopLeft.row + this.currentTet.perimeter[0][1]) * this.blockS + this.panelHeight);
-		for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
+		for (var row = 1, len = this.currentTet.perimeter.length;  row &lt; len;  row++) {
 			c.lineTo((tmpPotTopLeft.col + this.currentTet.perimeter[row][0]) * this.blockS, (tmpPotTopLeft.row + this.currentTet.perimeter[row][1]) * this.blockS + this.panelHeight);
 		}
 		c.closePath();
@@ -346,7 +373,7 @@ Game.prototype.draw = function () {
 			if (potPerimeter !== false) {
 				c.beginPath();
 				c.moveTo((this.currentTet.topLeft.col + potPerimeter[0][0] + this.currentTet.pivot) * this.blockS, (this.currentTet.topLeft.row + potPerimeter[0][1]) * this.blockS + this.panelHeight);
-				for (var row = 1, len = this.currentTet.perimeter.length;  row < len;  row++) {
+				for (var row = 1, len = this.currentTet.perimeter.length;  row &lt; len;  row++) {
 					c.lineTo((this.currentTet.topLeft.col + potPerimeter[row][0] + this.currentTet.pivot) * this.blockS, (this.currentTet.topLeft.row + potPerimeter[row][1]) * this.blockS + this.panelHeight);
 				}
 				c.closePath();
@@ -362,11 +389,11 @@ Game.prototype.draw = function () {
 	}
 	
 	// Draw all Tets
-	for (var tet = 0, aTLen = this.allTets.length;  tet < aTLen;  tet++) {
+	for (var tet = 0, aTLen = this.allTets.length;  tet &lt; aTLen;  tet++) {
 		var currTet = this.allTets[tet];
 		c.beginPath();
 		c.moveTo((currTet.topLeft.col + currTet.perimeter[0][0]) * this.blockS, (currTet.topLeft.row + currTet.perimeter[0][1]) * this.blockS + this.panelHeight);
-		for (var row = 1, len = currTet.perimeter.length;  row < len;  row++) {
+		for (var row = 1, len = currTet.perimeter.length;  row &lt; len;  row++) {
 			c.lineTo((currTet.topLeft.col + currTet.perimeter[row][0]) * this.blockS, (currTet.topLeft.row + currTet.perimeter[row][1]) * this.blockS + this.panelHeight);
 		}
 		c.closePath();
@@ -418,7 +445,7 @@ Game.prototype.draw = function () {
 /**
  * This method creates Tets.  This also causes the Game Over screen to appear when we cannot create a new Tet.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Game.prototype.createTet = function () {
 	// Make sure first Tet is not an S or Z
@@ -447,7 +474,7 @@ Game.prototype.createTet = function () {
 /**
  * This method creates a setInterval loop which moves our currentTet down at each interval.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Game.prototype.tetDownLoop = function () {
 	clearInterval(this.loop); // safe guard to prevent multiple loops from spawning before clearing it out first
@@ -462,20 +489,20 @@ Game.prototype.tetDownLoop = function () {
 /**
  * This method generates a landed array from allTets to be used to check for Tet/fragment collisions
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {Tet} [tet] - This parameter basically excludes the given Tet from allTets which are used to generate the landed array.
- * @returns {Array.<Array.<number>>} Landed array generated
+ * @returns {Array.&lt;Array.&lt;number>>} Landed array generated
  */
 Game.prototype.getLanded = function (tet) {
 	if (tet !== undefined) this.updateLanded = true;
 	if (this.updateLanded) {
-		for (var i = 0; i < this.BOARD_ROW_NUM; i++) {
+		for (var i = 0; i &lt; this.BOARD_ROW_NUM; i++) {
 			this.landed[i] = [0,0,0,0,0,0,0,0,0,0];
 		}
-		for (var i = 0, aT = this.allTets, len = aT.length;  i < len;  i++) {
+		for (var i = 0, aT = this.allTets, len = aT.length;  i &lt; len;  i++) {
 			if (aT[i] === this.currentTet || aT[i] === tet) continue;
-			for (var row = 0, rLen = aT[i].shape.length;  row < rLen;  row++) {
-				for (var col = 0, cLen = aT[i].shape[row].length;  col < cLen;  col++) {
+			for (var row = 0, rLen = aT[i].shape.length;  row &lt; rLen;  row++) {
+				for (var col = 0, cLen = aT[i].shape[row].length;  col &lt; cLen;  col++) {
 					if (aT[i].shape[row][col] !== 0) {
 						this.landed[row + aT[i].topLeft.row][col + aT[i].topLeft.col] = 1;
 					}
@@ -489,17 +516,17 @@ Game.prototype.getLanded = function (tet) {
 /**
  * This method inserts all zeros into the rows of the shape array if they are going to be removed.  Once we do this, we call the updateLanded method.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<number>} fullRows - This is the list of all rows that are to be removed from the Tet shapes.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;number>} fullRows - This is the list of all rows that are to be removed from the Tet shapes.
  */
 Game.prototype.alterShapes = function (fullRows) {
 	var firstRow = fullRows[0], lastRow = fullRows[fullRows.length - 1];
-	for (var tet = 0, len = this.allTets.length;  tet < len;  tet++) {
-		if (this.allTets[tet].topLeft.row <= firstRow - 4 || this.allTets[tet].topLeft.row > lastRow) continue;
+	for (var tet = 0, len = this.allTets.length;  tet &lt; len;  tet++) {
+		if (this.allTets[tet].topLeft.row &lt;= firstRow - 4 || this.allTets[tet].topLeft.row > lastRow) continue;
 		this.allTets[tet].alterShape(fullRows);
 	}
 	//this.tetsToRemove.sort(function(a,b){ return a - b }); // ensures indices are in numeric order
-	for (var i = 0, len = this.tetsToRemove.length;  i < len;  i++) {
+	for (var i = 0, len = this.tetsToRemove.length;  i &lt; len;  i++) {
 		this.allTets.splice(this.tetsToRemove[i] - i, 1);
 	}
 	this.tetsToRemove = [];
@@ -508,7 +535,7 @@ Game.prototype.alterShapes = function (fullRows) {
 /**
  * This method came from {@link http://www.w3schools.com/js/js_cookies.asp|W3Schools}.  It allows us to use cookies to retrieve the user's info.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {string} cName - This is the name of the cookie we want.
  * @returns {string} This is the string extracted from our cookie.
  */
@@ -527,7 +554,7 @@ Game.prototype.getCookie = function (cName) {
 /**
  * This method came from {@link http://www.w3schools.com/js/js_cookies.asp|W3Schools}.  It allows us to use cookies to store the user's info.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {string} cName - This is the name of the cookie we want.
  * @param {string} value - This is the value of the cookie we want to set.
  * @param {number} exDays - This is the expiration date of the cookie.
@@ -541,8 +568,8 @@ Game.prototype.setCookie = function (cName, value, exDays) {
 /**
  * This method gets the user's high scores from their cookie.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @returns {Array.<number>} This is the list of the high scores of the user.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @returns {Array.&lt;number>} This is the list of the high scores of the user.
  */
 Game.prototype.getHighScores = function () {
 	var tmp = JSON.parse(this.getCookie("highScores"));
@@ -555,8 +582,8 @@ Game.prototype.getHighScores = function () {
 /**
  * This method saves the user's high scores into the cookie.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<number>} v - This is the list of the high scores we're going to save in the cookie.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;number>} v - This is the list of the high scores we're going to save in the cookie.
  */
 Game.prototype.setHighScores = function (v) {
 	this.setCookie("highScores", JSON.stringify(v), 365);
@@ -564,14 +591,14 @@ Game.prototype.setHighScores = function (v) {
 /**
  * This method basically adjusts the user's high scores if they made a higher score than before.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @returns {Array.<number>} This is the list of the high scores of the user.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @returns {Array.&lt;number>} This is the list of the high scores of the user.
  */
 Game.prototype.checkHighScore = function () {
 	var highScores = this.getHighScores();
 	if (this.updateScore === true) {
 		var hsLen = highScores.length;
-		for (var i = 0;  i < hsLen;  i++) {
+		for (var i = 0;  i &lt; hsLen;  i++) {
 			if (this.score > highScores[i]) {
 				highScores.splice(i, 0, this.score);
 				break;
@@ -588,7 +615,7 @@ Game.prototype.checkHighScore = function () {
  * This function creates a Tet class intended to be instantiated by "new Tet()".  However, upon completing a row in our Tetris game, we will want to remove the blocks in that row.
  * In the case that our Tet becomes divided during the row removal, we will want to split the whole Tet into multiple Tet fragments which is when we will use "new Tet(-1)", then set its properties manually.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @class Represents a Tet, both living and landed.
  * @param {Game} game - Game object which the Tet will be in
  * @param {number} [type] - Shape of Tet desired, determined randomly if undefined.
@@ -601,15 +628,15 @@ Game.prototype.checkHighScore = function () {
  * @property {{row: number, col: number}} topLeft - This is the (row, column) position the Tet is in with respect to the game board (16 rows by 10 columns); (0, 0) being the most top left position.
  * @property {number} topLeft.row - Row position of Tet on board.
  * @property {number} topLeft.col - Column position of Tet on board.
- * @property {Array.<Array.<number>>} shape - Shape of Tet, e.g. _shape = [[1,1,1,1]] is horizontal I Tetrimino where [[1],[1],[1],[1]] is vertical I Tet.  Number of 0 indicates empty space.
- * @property {Array.<Array.<number>>} perimeter - Perimeter of Tet, e.g. _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet.
+ * @property {Array.&lt;Array.&lt;number>>} shape - Shape of Tet, e.g. _shape = [[1,1,1,1]] is horizontal I Tetrimino where [[1],[1],[1],[1]] is vertical I Tet.  Number of 0 indicates empty space.
+ * @property {Array.&lt;Array.&lt;number>>} perimeter - Perimeter of Tet, e.g. _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet.
  * Imagine Tetriminos being expressed as 4 "blocks," each block's side would be _s pixels in magnitude, where _s is the variable blockS defined in index.php.
  * Therefore, we can determine its perimeter by taking the "(x, y) coordinates" in each "row" of _perimeter, and multiplying each x and y value by _s.
  */
 function Tet (game, type) {
 	if (!(this instanceof arguments.callee)) return new Tet(game, type); // force instantiation
 	this.game = game;
-	if (type >= -1 && type < 7) this.type = type;
+	if (type >= -1 && type &lt; 7) this.type = type;
 	else this.type = parseInt(Math.floor(Math.random() * 7));
 	if (this.type > -1) {
 		this.rotation = 0;
@@ -621,9 +648,9 @@ function Tet (game, type) {
 /**
  * This method takes in a Tet type and rotation then outputs its shape matrix.  This method is only needed on a live Tet.  I.e. if a Tet is already placed on the landed array, this method will not be used.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {number} rotation - Rotation of shape, determined by user input.
- * @returns {Array.<Array.<number>>} Number matrix of shape.  If type is unexpected, return empty array.
+ * @returns {Array.&lt;Array.&lt;number>>} Number matrix of shape.  If type is unexpected, return empty array.
  */
 Tet.prototype.getShapeMatrix = function (rotation) {
 	// Shapes from http://en.wikipedia.org/wiki/Tetris#Colors_of_Tetriminos
@@ -657,9 +684,9 @@ Tet.prototype.getShapeMatrix = function (rotation) {
  * 1) Remove trailing zeros from each row, e.g. [1,0] becomes [1];
  * 2) If new shape is one row, remove leading zeros, e.g. [0,1] becomes [1].  Which they are in the Tet.cleanShape() method.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<Array.<number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
- * @returns {Array.<Array.<number>>} Perimeter of shape.  If shape is unknown, return empty array.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;Array.&lt;number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
+ * @returns {Array.&lt;Array.&lt;number>>} Perimeter of shape.  If shape is unknown, return empty array.
  */
 Tet.prototype.getPerimeter = function (shape) {
 	var periMatrix = [
@@ -693,15 +720,15 @@ Tet.prototype.getPerimeter = function (shape) {
 		[ [[0,1],[1,1],[1  ]], [[1,0],[1,1],[0,1],[0,3],[1,3],[1,2],[2,2],[2,0]] ]
 	], checkNextShape;
 	// Iterate through periMatrix to see if the given shape matches a shape within this array
-	for (var pRow = 0, pLen = periMatrix.length;  pRow < pLen;  pRow++) {
+	for (var pRow = 0, pLen = periMatrix.length;  pRow &lt; pLen;  pRow++) {
 		checkNextShape = false;
-		for (var row = 0, rLen = shape.length;  row < rLen;  row++) {
+		for (var row = 0, rLen = shape.length;  row &lt; rLen;  row++) {
 			if (rLen !== periMatrix[pRow][0].length) {
 				checkNextShape = true;
 				break;
 			}
 			if (checkNextShape) break;
-			for (var col = 0, cLen = shape[row].length;  col < cLen;  col++) {
+			for (var col = 0, cLen = shape[row].length;  col &lt; cLen;  col++) {
 				if (shape[row].length !== periMatrix[pRow][0][row].length) {
 					checkNextShape = true;
 					break;
@@ -723,8 +750,8 @@ Tet.prototype.getPerimeter = function (shape) {
 /**
  * This method actually sets the shape and perimeter of the Tet that's executing this method.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<Array.<number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;Array.&lt;number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
  */
 Tet.prototype.setShape = function (shape) {
 	this.shape = shape;
@@ -734,19 +761,19 @@ Tet.prototype.setShape = function (shape) {
  * This method changes the rotation, if the shape can rotate properly on the game board, and changes the shape and perimeter if it successfully rotates.  Otherwise, do nothing.
  * We also move the Tet this.pivot blocks to the right, then reset the pivot to zero.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<Array.<number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;Array.&lt;number>>} shape - This is the shape of the Tet we care about getting the perimeter from.
  * @returns {boolean} Currently, we don't care about the actual return value.
  */
 Tet.prototype.rotate = function () { // by default, always clockwise
 	var landed = this.game.getLanded(), potRot = this.rotation, potShape;
-	potRot = potRot < 3 ? potRot + 1 : 0;
+	potRot = potRot &lt; 3 ? potRot + 1 : 0;
 	potShape = this.getShapeMatrix(potRot);
 	// check for potential collisions
-	for (var row = 0, rLen = potShape.length;  row < rLen;  row++) {
-		for (var col = 0, cLen = potShape[row].length;  col < cLen;  col++) {
+	for (var row = 0, rLen = potShape.length;  row &lt; rLen;  row++) {
+		for (var col = 0, cLen = potShape[row].length;  col &lt; cLen;  col++) {
 			if (potShape[row][col] !== 0) {
-				if (col + this.topLeft.col < 0) {
+				if (col + this.topLeft.col &lt; 0) {
 					//console.log('left beyond playing field');
 					return false;
 				}
@@ -774,15 +801,15 @@ Tet.prototype.rotate = function () { // by default, always clockwise
 /**
  * This method checks to see if the pivot shape shadow can display properly.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @returns {Array.<Array.<number>>} This returns the perimeter matrix given by the getPerimeter() method.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @returns {Array.&lt;Array.&lt;number>>} This returns the perimeter matrix given by the getPerimeter() method.
  */
 Tet.prototype.doesNotTetPivotCollide = function () {
 	var potRot = this.rotation, potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + this.pivot }, potShape, landed = this.game.getLanded(this);
-	potRot = potRot < 3 ? potRot + 1 : 0;
+	potRot = potRot &lt; 3 ? potRot + 1 : 0;
 	potShape = this.getShapeMatrix(potRot);
-	for (var row = 0, rLen = potShape.length;  row < rLen;  row++) {
-		for (var col = 0, cLen = potShape[row].length;  col < cLen;  col++) {
+	for (var row = 0, rLen = potShape.length;  row &lt; rLen;  row++) {
+		for (var col = 0, cLen = potShape[row].length;  col &lt; cLen;  col++) {
 			if (potShape[row][col] !== 0) {
 				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
 					//console.log('below playing field');
@@ -792,7 +819,7 @@ Tet.prototype.doesNotTetPivotCollide = function () {
 					//console.log('bot: space taken');
 					return false;
 				}
-				if (col + potentialTopLeft.col < 0) {
+				if (col + potentialTopLeft.col &lt; 0) {
 					//console.log('left beyond playing field');
 					return false;
 				}
@@ -812,14 +839,14 @@ Tet.prototype.doesNotTetPivotCollide = function () {
 /**
  * This method checks to see if a Tet will collide with the bottom of the game board or another Tet.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {{row: number, col: number}} potentialTopLeft - This object contains a potential row and column which we use to check to see if the Tet will collide if it moves to the coordinate specified by this param.
  * @returns {boolean} If Tet colides, return true; else, false.
  */
 Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
 	var landed = this.game.getLanded(this);
-	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
-		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
+	for (var row = 0, rLen = this.shape.length;  row &lt; rLen;  row++) {
+		for (var col = 0, cLen = this.shape[row].length;  col &lt; cLen;  col++) {
 			if (this.shape[row][col] !== 0) {
 				if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
 					//console.log('below playing field');
@@ -837,28 +864,28 @@ Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
 /**
  * This method checks to see if a Tet will collide with the side of the game board or another Tet.  If it collides on the right side of the Tet, we'll adjust the pivot as necessary.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @param {{row: number, col: number}} potentialTopLeft - This object contains a potential row and column which we use to check to see if the Tet will collide if it moves to the coordinate specified by this param.
  * @param {number} [direction] - If value is 1, we are testing the right side and we're going to adjust the pivot.
  * @returns {boolean} If Tet colides, return true; else, false.
  */
 Tet.prototype.doesTetCollideSide = function (potentialTopLeft, direction) {
 	var landed = this.game.getLanded();
-	for (var row = 0, rLen = this.shape.length;  row < rLen;  row++) {
-		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
+	for (var row = 0, rLen = this.shape.length;  row &lt; rLen;  row++) {
+		for (var col = 0, cLen = this.shape[row].length;  col &lt; cLen;  col++) {
 			if (this.shape[row][col] !== 0) {
-				if (col + potentialTopLeft.col < 0) {
+				if (col + potentialTopLeft.col &lt; 0) {
 					//console.log('left beyond playing field');
 					return true;
 				}
 				if (col + potentialTopLeft.col >= this.game.BOARD_COL_NUM) {
 					//console.log('right beyond playing field');
-					if (this.pivot < this.pivotMax && this.rotation % 2 === 0) this.pivot++;
+					if (this.pivot &lt; this.pivotMax && this.rotation % 2 === 0) this.pivot++;
 					return true;
 				}
 				if (landed[row + potentialTopLeft.row][col + potentialTopLeft.col] !== 0) {
 					//console.log('side: space taken');
-					if (direction === 1) if (this.pivot < this.pivotMax && this.rotation % 2 === 0) this.pivot++;
+					if (direction === 1) if (this.pivot &lt; this.pivotMax && this.rotation % 2 === 0) this.pivot++;
 					return true;
 				}
 			}
@@ -870,7 +897,7 @@ Tet.prototype.doesTetCollideSide = function (potentialTopLeft, direction) {
  * This method moves the Tet left by 1 column if it does not collide with the side of the game board or another Tet.
  * This method also resets the pivot to zero.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Tet.prototype.moveLeft = function () {
 	this.pivot = 0;
@@ -880,7 +907,7 @@ Tet.prototype.moveLeft = function () {
 /**
  * This method moves the Tet right by 1 column if it does not collide with the side of the game board or another Tet.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Tet.prototype.moveRight = function () {
 	var potentialTopLeft = { row: this.topLeft.row, col: this.topLeft.col + 1 };
@@ -890,7 +917,7 @@ Tet.prototype.moveRight = function () {
  * This method moves the Tet down by 1 column if it does not collide with the side of the game board or another Tet.
  * If it does collide, the Tet lands, we create another Tet, and we perform the collided method to handle row elimination and Tet fragmentation.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Tet.prototype.moveDown = function () {
 	var potentialTopLeft = { row: this.topLeft.row + 1, col: this.topLeft.col };
@@ -908,14 +935,14 @@ Tet.prototype.moveDown = function () {
  * score += Math.pow(rows_eliminated, 1 + (rows_eliminated - 1) * 0.1) * 10000
  * We then perform the falling animations on the Tets affected by "gravity."
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Tet.prototype.collided = function () {
 	var landed = this.game.getLanded(), isFilled, fullRows = [], fRLen;
 	// Find the rows we're going to eliminate
-	for (var row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
+	for (var row = this.topLeft.row; row &lt; this.game.BOARD_ROW_NUM; row++) {
 		isFilled = true;
-		for (var col = 0; col < this.game.BOARD_COL_NUM; col++)
+		for (var col = 0; col &lt; this.game.BOARD_COL_NUM; col++)
 			if (landed[row][col] === 0) isFilled = false;
 		if (isFilled) fullRows.push(row);
 	}
@@ -934,7 +961,7 @@ Tet.prototype.collided = function () {
 		tetsMoved = true;
 		while (tetsMoved) {
 			tetsMoved = false;
-			for (tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;  tet < tLen;  tet++) {
+			for (tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;  tet &lt; tLen;  tet++) {
 				if (movingTets.indexOf(aT[tet], 0) > -1 || (aT[tet] === that.game.currentTet && that.game.newTet !== true)) continue;
 				potTL = { row: aT[tet].topLeft.row + 1, col: aT[tet].topLeft.col };
 				if (!aT[tet].doesTetCollideBot(potTL)) {
@@ -957,27 +984,27 @@ Tet.prototype.collided = function () {
  * By cleaning, we mean removing extraneous zeros from their shape matrix as well as adjusting their topLeft property.
  * We clean them so that we can match its shape against a known Tet/fragment so we can determine its perimeter.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {{shape: Array.<Array.<number>>, topLeft: {row: number, col: number}}} o - This is a object which holds a shape and a topLeft property.
- * @returns {{shape: Array.<Array.<number>>, topLeft: {row: number, col: number}}} This is the cleaned up shape, without extraneous zeros, and adjusted topLeft.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {{shape: Array.&lt;Array.&lt;number>>, topLeft: {row: number, col: number}}} o - This is a object which holds a shape and a topLeft property.
+ * @returns {{shape: Array.&lt;Array.&lt;number>>, topLeft: {row: number, col: number}}} This is the cleaned up shape, without extraneous zeros, and adjusted topLeft.
  */
 Tet.prototype.cleanShape = function (o) {
 	var shape = o.shape, topLeft = o.topLeft, done = false;
 	// If there exists columns of all zeros on the far left, remove all those columns
 	while (true) {
-		for (var row = 0, len = shape.length;  row < len;  row++)
+		for (var row = 0, len = shape.length;  row &lt; len;  row++)
 			if (shape[row][0] > 0) {
 				done = true;
 				break;
 			}
 		if (done) break;
-		for (var row = 0, len = shape.length;  row < len;  row++)
+		for (var row = 0, len = shape.length;  row &lt; len;  row++)
 			shape[row].splice(0,1);
 		// Adjust topLeft if necessary
 		topLeft.col += 1;
 	}
 	// If there exists zeros at the end of each row array, remove those zeros
-	for (var row = 0, len = shape.length;  row < len;  row++) {
+	for (var row = 0, len = shape.length;  row &lt; len;  row++) {
 		for (var col = shape[row].length - 1; col >= 0; col--) {
 			if (shape[row][col] === 0) {
 				shape[row].splice(col,1);
@@ -991,23 +1018,23 @@ Tet.prototype.cleanShape = function (o) {
 /**
  * This method checks to see if itself, an array, is all zeros.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  * @returns {boolean} If itself is all zeros, return true; else, false.
  */
 Array.prototype.allZeros = function () { // Checks if an Array is all zeros or not
-	for (var col = 0, len = this.length;  col < len;  col++)
+	for (var col = 0, len = this.length;  col &lt; len;  col++)
 		if (this[col] > 0) return false;
 	return true;
 }
 /**
  * This method parses its own shape to determine if it needs to fragment or not.  If it becomes fragmented, we instantiate a new Tet class to add in its fragmented part.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
  */
 Tet.prototype.updateTet = function () {
 	var currShape = [], topLeft, q = [];
 	// Iterate through the altered shape to build multiple fragments if necessary
-	for (var row = 0, len = this.shape.length;  row < len;  row++) {
+	for (var row = 0, len = this.shape.length;  row &lt; len;  row++) {
 		// If we do not come across a row with all zeros, continue building our shape
 		if (!this.shape[row].allZeros()) {
 			if (currShape.length === 0) topLeft = { row: this.topLeft.row + row, col: this.topLeft.col };
@@ -1023,7 +1050,7 @@ Tet.prototype.updateTet = function () {
 	if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft });
 	if (q.length === 0) this.game.tetsToRemove.push(this.game.allTets.indexOf(this)); // Remove this Tet from allTets if shape is a zero'd matrix (Tet completely gone)
 	// Iterate through our queue
-	for (var qs = 0, len = q.length;  qs < len;  qs++) {
+	for (var qs = 0, len = q.length;  qs &lt; len;  qs++) {
 		var tmp = this.cleanShape(q[qs]);
 		// For the first object in the queue, keep our current Tet and just set the shape
 		if (qs === 0) {
@@ -1043,16 +1070,39 @@ Tet.prototype.updateTet = function () {
 /**
  * This method sets each row within its shape to zero for each row marked as full.
  *
- * @author Jared Gotte <jareddgotte@gmail.com>
- * @param {Array.<number>} fullRows - This is an array of all of the rows that were marked as full in the collided method above.
+ * @author Jared Gotte &lt;jareddgotte@gmail.com>
+ * @param {Array.&lt;number>} fullRows - This is an array of all of the rows that were marked as full in the collided method above.
  */
 Tet.prototype.alterShape = function (fullRows) {
-	for (var i = 0, len = fullRows.length, row;  i < len;  i++) {
+	for (var i = 0, len = fullRows.length, row;  i &lt; len;  i++) {
 		row = fullRows[i] - this.topLeft.row;
-		if (row < 0 || row > this.shape.length - 1) continue;
-		for (var col = 0, cLen = this.shape[row].length;  col < cLen;  col++) {
+		if (row &lt; 0 || row > this.shape.length - 1) continue;
+		for (var col = 0, cLen = this.shape[row].length;  col &lt; cLen;  col++) {
 			this.shape[row][col] = 0;
 		}
 	}
 	this.updateTet();
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="Game.html">Game</a></li><li><a href="Tet.html">Tet</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.3-dev</a> on Sat Nov 09 2013 12:33:24 GMT-0600 (CST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
