@@ -35,6 +35,8 @@ strong, b {
 	margin: 0 auto;
 	display: block;
 	float: left;
+	width: 200px;
+	height: 400px;
 }
 .panel {
 	border: 2px solid black;
