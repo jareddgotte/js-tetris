@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-	<meta name="description" content="A Tetris game made explicitly with HTML5, JavaScript, and without jQuery and other JS libraries.">
+  <meta name="description" content="A Tetris game made explicitly with HTML5, JavaScript, and without jQuery and other JS libraries.">
   <meta name="keywords" content="HTML5,JavaScript,Tetris,Game,Asynchronous,CSS3">
   <meta name="author" content="Jared Gotte">
 
-	<title>js-tetris</title>
-	
+  <title>js-tetris</title>
+
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/main.css">
 </head>
