@@ -166,6 +166,22 @@ Game.prototype.testCase = function (n) {
 			this.draw();
 			return;
 			break;
+		case 7: // Check I (flush against right wall, pivot accumulated) does not
+			// rotate through a landed block (issue #1:
+			// https://github.com/jareddgotte/js-tetris/issues/1)
+			tmp = new Tet(this, 0); // I, rotated vertical, landed flush against the right wall
+			tmp.rotate();
+			tmp.topLeft = { row: 10, col: 9 };
+			this.allTets.push(tmp);
+			// Falling Tet: I horizontal, flush against the right wall, with pivot
+			// already accumulated as if the player held right against the wall.
+			// Before the fix, rotating this shifted the Tet into the landed I
+			// above without checking for collision at the shifted column.
+			tmp = new Tet(this, 0); // I
+			tmp.topLeft = { row: 9, col: 6 };
+			tmp.pivot = 3;
+			this.currentTet = tmp;
+			break;
 		default: // Do nothing
 			console.log('Test Case: ' + n + ' does not exist.  Resetting.');
 			this.currentTet = null;

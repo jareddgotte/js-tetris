@@ -894,15 +894,17 @@ Tet.prototype.rotate = function () { // by default, always clockwise
   var potShape
   potRot = (potRot < 3 ? potRot + 1 : 0)
   potShape = this.getShapeMatrix(potRot)
-  // check for potential collisions
+  // check for potential collisions at the column the Tet will actually end up
+  // in once the pivot shift below is applied
+  var potCol = this.topLeft.col + this.pivot
   for (var row = 0, rLen = potShape.length; row < rLen; row++) {
     for (var col = 0, cLen = potShape[row].length; col < cLen; col++) {
       if (potShape[row][col] !== 0) {
-        if (col + this.topLeft.col < 0) {
+        if (col + potCol < 0) {
           // console.log('left beyond playing field')
           return false
         }
-        if (col + this.topLeft.col >= this.game.BOARD_COL_NUM) {
+        if (col + potCol >= this.game.BOARD_COL_NUM) {
           // console.log('right beyond playing field')
           return false
         }
@@ -910,7 +912,7 @@ Tet.prototype.rotate = function () { // by default, always clockwise
           // console.log('below playing field')
           return false
         }
-        if (landed[row + this.topLeft.row][col + this.topLeft.col] !== 0) {
+        if (landed[row + this.topLeft.row][col + potCol] !== 0) {
           // console.log('rotate: space is taken')
           return false
         }
