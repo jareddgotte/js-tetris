@@ -1,22 +1,19 @@
-js-tetris
-============
+# js-tetris
 
-The purpose of this repo is to demonstrate my knowledge of git on a public personal repo while upgrading my current, mostly functional, Tetris game which was made in JavaScript and HTML5 (no 3rd party js libraries allowed, e.g. jQuery).
+A mostly functional Tetris game built with HTML5 Canvas and vanilla JavaScript. This public personal project demonstrates git workflow discipline while evolving a fully custom game engine.
 
-## Development checks
+The browser game has no third-party runtime libraries, frameworks, production dependencies, or build step.
 
-The browser game remains dependency-free and continues to load `js/Tetris.js` and `js/TestCase.js` directly through script tags. The npm packages are development-only checks and require Node.js 22.
+## Play locally
 
-From a clean checkout, install the pinned tools from the lockfile and run all maintained JavaScript through Standard Style plus the deterministic engine tests:
-
-```sh
-npm ci --ignore-scripts
-npm run lint
-npm test
-```
-
-`npm test` runs the existing `node --test test/engine.test.js` suite and exits nonzero on failure. To apply Standard Style fixes locally, run:
+Serve the repository root with a static server and open `index.php`. For example:
 
 ```sh
-npm run format
+python3 -m http.server 8000
 ```
+
+Then visit <http://localhost:8000/index.php>. The `.php` file contains static HTML and does not require PHP processing.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for prerequisites, the clean-checkout setup, exact development checks, and contribution expectations.

@@ -1,36 +1,25 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+Guidance for coding agents working in this repository.
 
-## What this is
+## Project boundaries
 
-A Tetris game built with plain HTML5 Canvas + vanilla JavaScript — explicitly no third-party browser libraries (no jQuery, no frameworks, no build tooling). The browser runtime has no production dependencies; the minimal `package.json` and lockfile contain development checks only. There is no bundler or third-party test framework. Headless regression tests use Node's built-in test runner through `npm test` (the underlying command is `node --test test/engine.test.js`; see README.md). The repo's stated purpose (see README.md) is to demonstrate git workflow discipline while implementing a fully custom Tetris engine.
+Preserve the dependency-free vanilla-JavaScript browser runtime: no third-party runtime libraries, frameworks, bundlers, or module migration. Pinned development-only tooling may be added proportionately; substantial modernization is issue-first. Follow `CONTRIBUTING.md` for setup, exact validation commands, test expectations, and pull-request workflow.
 
-## Running it
+Electris is a divergent Electron successor. Individual behavior or domain semantics may be considered as evidence, but never synchronize the repositories wholesale or copy its architecture for parity.
 
-There's no build/dev-server step and no install is needed to run the browser game. Serve the directory root with any static/PHP-capable server and open `index.php` (it's plain HTML despite the `.php` extension — no server-side logic). Node.js 22 and `npm ci --ignore-scripts` are needed only for development checks.
+## Architecture and invariants
 
-## Linting
+`index.php` loads two non-module global scripts in order:
 
-All maintained JavaScript follows the pinned JavaScript Standard Style rules (no semicolons, 2-space indent, single quotes). Run `npm run lint` to check production source, manual fixtures, and deterministic tests. `npm run format` applies optional local fixes.
+- `js/Tetris.js` defines `Game`, the controller, and `Tet`, a tetrimino. It owns the loop, input, scoring, persistence, movement, collision, rotation, and row-clearing behavior. Shape rotation matrices are defined by `Tet.prototype.getShapeMatrix`.
+- `js/TestCase.js` adds manual developer-mode board fixtures through `Game.prototype.testCase`.
 
-## Architecture
+The board is not stored as a canonical cell matrix. `Game.allTets` is authoritative; `Game.landed` is only a derived collision lookup rebuilt by `getLanded`. Any movement, collision, landing, row clearing, fragmentation, or cascade change must keep `allTets` correct and mark or rebuild `landed` through the existing `updateLanded` protocol before relying on it.
 
-Two script files, loaded in order by `index.php`, both attached to the global scope (no modules):
+Row clears can split Tets into fragments rather than deleting entire pieces; preserve the `alterShape`/`alterShapes` and `cleanShape` flow. Only one `Game` instance is intended per page.
 
-- **`js/Tetris.js`** — the entire engine. Defines two constructor functions:
-  - `Game(canvasId, highScoresListId, devMode)` — the top-level controller. Owns the canvas, the game loop (`tetDownLoop`), scoring/high-score persistence (via cookies: `getCookie`/`setCookie`/`getHighScores`/`setHighScores`), input handling (`handleEvents`, bound to `document.onkeydown`/window focus-blur), and the `landed` array (a 2D grid used for collision detection, rebuilt from `allTets` via `getLanded`). Only one `Game` is meant to exist per page.
-  - `Tet(game, type)` — a single tetrimino ("Tet" for short). Owns its own shape matrix, rotation/pivot state, and movement/collision methods (`rotate`, `moveLeft/Right/Down`, `doesTetCollideSide/Bot`, `collided`). When rows clear, Tets are split into shape fragments rather than deleted wholesale — see `alterShape`/`alterShapes` and `cleanShape` for how a Tet's matrix gets re-derived after partial removal.
-  - Board state model: the game does **not** use a matrix-of-cells board. Instead `allTets` holds every live/landed `Tet`, and `landed` is a derived lookup grid rebuilt on demand (see the commit "Fundamentally changed the way the board is represented"). Any change to collision or clearing logic needs to keep `allTets` and `landed` in sync via `updateLanded`.
-  - Shape data lives in a hardcoded `matrixMatrix` inside `Tet.prototype.getShapeMatrix` — one entry per tetrimino type (I, J, L, O, S, T, Z), each holding its rotation states as row-major 0/1 matrices.
-
-- **`js/TestCase.js`** — `Game.prototype.testCase(n)`, a switch statement that hand-places specific `Tet` configurations onto the board (e.g. "T rotated once, single row deletion") for manually exercising row-clear/cascade logic. Only reachable when `devModeOn` is true.
-
-- **Developer mode**: pass `devMode: true` (third arg to `Game`) to unlock extra keybinds in `handleEvents`: number keys 0–9 load `testCase(n)`, `End` nudges the falling Tet up, `G` forces game over, `H` resets high scores, `` ` `` toggles dev mode.
-
-- **`docs/`** is JSDoc-generated HTML output (from the `@param`/`@property` comment blocks in `Tetris.js`) — do not hand-edit; regenerate via a JSDoc tool if source comments change and docs need to stay current.
-
-- **`css/`** — `reset.css` (generic reset) + `main.css` (game layout/panel/canvas styling). No preprocessor.
+Changed behavior requires deterministic coverage in `test/engine.test.js`, with browser checks added where relevant. Correct affected stale documentation in the same change. `docs/` is generated JSDoc output; do not hand-edit it.
 
 ## Maintaining this file
 
