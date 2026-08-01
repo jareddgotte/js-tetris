@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-A Tetris game built with plain HTML5 Canvas + vanilla JavaScript — explicitly no third-party JS libraries (no jQuery, no frameworks, no build tooling). There is no `package.json`, no bundler, no test runner, and no npm scripts. The repo's stated purpose (see README.md) is to demonstrate git workflow discipline while implementing a fully custom Tetris engine.
+A Tetris game built with plain HTML5 Canvas + vanilla JavaScript — explicitly no third-party JS libraries (no jQuery, no frameworks, no build tooling). There is no `package.json`, no bundler, no third-party test framework, no dependency install step, and no npm scripts. Headless regression tests run via Node's built-in test runner (`node --test test/engine.test.js`, see README.md). The repo's stated purpose (see README.md) is to demonstrate git workflow discipline while implementing a fully custom Tetris engine.
 
 ## Running it
 
