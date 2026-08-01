@@ -1,0 +1,17 @@
+{
+  "name": "js-tetris",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development checks for the dependency-free browser Tetris game",
+  "scripts": {
+    "test": "node --test test/engine.test.js",
+    "lint": "standard \"js/**/*.js\" \"test/**/*.js\"",
+    "format": "standard --fix \"js/**/*.js\" \"test/**/*.js\""
+  },
+  "devDependencies": {
+    "standard": "17.1.2"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  }
+}
