@@ -700,7 +700,7 @@ Game.prototype.getHighScores = function () {
 
   let candidate = persisted
   if (!Array.isArray(candidate)) {
-    candidate = []
+    candidate = this.highScores || []
     repair = true
   }
   const normalized = normalizeHighScores(candidate)
