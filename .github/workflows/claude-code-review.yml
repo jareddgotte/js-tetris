@@ -29,7 +29,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # fetch-depth: 0 so the review plugin can diff against the base branch
+          fetch-depth: 0
 
       - name: Run Claude Code Review
         id: claude-review
@@ -39,6 +40,8 @@ jobs:
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          # Temporary diagnostic: surface tool calls + permission denials in the run log
+          show_full_output: true
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
