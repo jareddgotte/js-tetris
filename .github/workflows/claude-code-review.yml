@@ -43,7 +43,9 @@ jobs:
           # run log only and posts nothing to the pull request
           prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
           # Without this the Skill call above is permission-denied and the review never runs
-          claude_args: '--allowedTools Skill'
+          # --allowedTools is exclusive, so Bash must be listed too: the skill
+          # inspects the repo with git/cat and posts its comment via `gh api`
+          claude_args: '--allowedTools Skill,Bash'
           # Temporary diagnostic: surface tool calls + permission denials in the run log
           show_full_output: true
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
