@@ -10,7 +10,7 @@ Electris is a divergent Electron successor. Individual behavior or domain semant
 
 ## Architecture and invariants
 
-`index.php` loads two non-module global scripts in order:
+`index.html` loads two non-module global scripts in order:
 
 - `js/Tetris.js` defines `Game`, the controller, and `Tet`, a tetrimino. It owns the loop, input, scoring, persistence, movement, collision, rotation, and row-clearing behavior. Shape rotation matrices are defined by `Tet.prototype.getShapeMatrix`.
 - `js/TestCase.js` adds manual developer-mode board fixtures through `Game.prototype.testCase`.

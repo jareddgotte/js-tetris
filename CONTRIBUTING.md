@@ -16,13 +16,13 @@ From a clean checkout, install the pinned development tooling without running pa
 npm ci --ignore-scripts
 ```
 
-Serve the repository root, then open <http://localhost:8000/index.php>:
+Serve the repository root, then open <http://localhost:8000/>:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-`index.php` contains static HTML and requires no PHP processing.
+The canonical `index.html` entry point requires no server-side processing.
 
 ## Development checks
 

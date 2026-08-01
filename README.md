@@ -6,13 +6,13 @@ The browser game has no third-party runtime libraries, frameworks, production de
 
 ## Play locally
 
-Serve the repository root with a static server and open `index.php`. For example:
+Serve the repository root with a static server. For example:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-Then visit <http://localhost:8000/index.php>. The `.php` file contains static HTML and does not require PHP processing.
+Then visit <http://localhost:8000/>. The canonical `index.html` entry point requires no server-side processing.
 
 ## Contributing
 
