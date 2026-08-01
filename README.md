@@ -3,12 +3,20 @@ js-tetris
 
 The purpose of this repo is to demonstrate my knowledge of git on a public personal repo while upgrading my current, mostly functional, Tetris game which was made in JavaScript and HTML5 (no 3rd party js libraries allowed, e.g. jQuery).
 
-## Regression tests
+## Development checks
 
-The headless engine tests require Node.js 18 or newer and have no install step or external dependencies. Run them offline from the repository root:
+The browser game remains dependency-free and continues to load `js/Tetris.js` and `js/TestCase.js` directly through script tags. The npm packages are development-only checks and require Node.js 22.
+
+From a clean checkout, install the pinned tools from the lockfile and run all maintained JavaScript through Standard Style plus the deterministic engine tests:
 
 ```sh
-node --test test/engine.test.js
+npm ci --ignore-scripts
+npm run lint
+npm test
 ```
 
-The command exits nonzero when a test fails. The browser game continues to load `js/Tetris.js` and `js/TestCase.js` directly through script tags.
+`npm test` runs the existing `node --test test/engine.test.js` suite and exits nonzero on failure. To apply Standard Style fixes locally, run:
+
+```sh
+npm run format
+```
