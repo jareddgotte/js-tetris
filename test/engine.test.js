@@ -10,16 +10,20 @@ const root = path.resolve(__dirname, '..')
 const engineSource = fs.readFileSync(path.join(root, 'js/Tetris.js'), 'utf8')
 const fixturesSource = fs.readFileSync(path.join(root, 'js/TestCase.js'), 'utf8')
 
-function loadEngine (randomValues = []) {
+function loadEngine (randomValues = [], options = {}) {
   const intervals = new Map()
-  const cookies = new Map()
+  const cookies = new Map(Object.entries(options.cookies || {}))
+  const canvasText = []
+  let cookieWrites = 0
   const canvasContext = {
     beginPath () {},
     clearRect () {},
     closePath () {},
     fill () {},
     fillRect () {},
-    fillText () {},
+    fillText (text) {
+      canvasText.push(String(text))
+    },
     lineTo () {},
     moveTo () {},
     stroke () {},
@@ -41,9 +45,12 @@ function loadEngine (randomValues = []) {
   }
   Object.defineProperty(document, 'cookie', {
     get () {
+      if (options.cookieReadError) throw new Error('cookie read unavailable')
       return Array.from(cookies, ([name, value]) => name + '=' + value).join('; ')
     },
     set (cookie) {
+      if (options.cookieWriteError) throw new Error('cookie write unavailable')
+      cookieWrites++
       const pair = cookie.split(';', 1)[0]
       const separator = pair.indexOf('=')
       cookies.set(pair.slice(0, separator), pair.slice(separator + 1))
@@ -78,9 +85,22 @@ function loadEngine (randomValues = []) {
   return {
     Game: context.Game,
     Tet: context.Tet,
-    createGame () {
-      return new context.Game('game', 'high-scores', false)
+    canvasText,
+    cookieValue (name) {
+      const value = cookies.get(name)
+      if (value === undefined) return undefined
+      return vm.runInContext('unescape(' + JSON.stringify(value) + ')', context)
     },
+    cookieWrites () {
+      return cookieWrites
+    },
+    createGame (devMode = false) {
+      return new context.Game('game', 'high-scores', devMode)
+    },
+    dispatchKey (keyCode) {
+      document.onkeydown({ keyCode })
+    },
+    document,
     pendingIntervals () {
       return intervals.size
     },
@@ -117,6 +137,10 @@ function occupiedCells (game) {
     }
   }
   return cells
+}
+
+function plainScores (game) {
+  return JSON.parse(JSON.stringify(game.getHighScores()))
 }
 
 test('movement and rotation stop at board boundaries', () => {
@@ -269,4 +293,162 @@ test('a blocked spawn ends the game, clears its loop, and records the score', ()
   assert.equal(game.updateScore, false)
   assert.equal(game.getHighScores()[0], 12345)
   assert.equal(engine.pendingIntervals(), 0)
+})
+
+test('Backquote toggles the default developer mode and its visible DEV state', () => {
+  const engine = loadEngine()
+  const game = engine.createGame()
+
+  assert.equal(game.devModeOn, false)
+  engine.canvasText.length = 0
+  engine.dispatchKey(192)
+  assert.equal(game.devModeOn, true)
+  assert.equal(engine.canvasText.includes('DEV'), true)
+
+  engine.canvasText.length = 0
+  engine.dispatchKey(192)
+  assert.equal(game.devModeOn, false)
+  assert.equal(engine.canvasText.includes('DEV'), false)
+})
+
+test('developer fixture commands stay gated until developer mode is enabled', () => {
+  const engine = loadEngine()
+  const game = engine.createGame()
+  const fixtureCalls = []
+  game.testCase = function (fixture) {
+    fixtureCalls.push(fixture)
+  }
+  game.createTet = function () {}
+  game.tetDownLoop = function () {}
+
+  engine.dispatchKey(55)
+  assert.deepEqual(fixtureCalls, [])
+
+  engine.dispatchKey(192)
+  engine.dispatchKey(55)
+  assert.deepEqual(fixtureCalls, [7])
+
+  engine.dispatchKey(192)
+  engine.dispatchKey(55)
+  assert.deepEqual(fixtureCalls, [7])
+})
+
+test('constructor-enabled developer mode still permits gated fixtures', () => {
+  const engine = loadEngine()
+  const game = engine.createGame(true)
+  const fixtureCalls = []
+  game.testCase = function (fixture) {
+    fixtureCalls.push(fixture)
+  }
+  game.createTet = function () {}
+  game.tetDownLoop = function () {}
+
+  engine.dispatchKey(55)
+
+  assert.equal(game.devModeOn, true)
+  assert.deepEqual(fixtureCalls, [7])
+})
+
+test('high-score cookies are normalized and repaired across invalid shapes', () => {
+  const cases = [
+    {
+      name: 'missing',
+      cookies: {},
+      expected: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      name: 'malformed',
+      cookies: { highScores: 'not-json' },
+      expected: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      name: 'non-array',
+      cookies: { highScores: '{"score":10}' },
+      expected: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      name: 'short, unsorted, and fractional',
+      cookies: { highScores: '[4.5,9,2]' },
+      expected: [9, 4.5, 2, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      name: 'long',
+      cookies: { highScores: '[12,11,10,9,8,7,6,5,4,3,2,1]' },
+      expected: [12, 11, 10, 9, 8, 7, 6, 5, 4, 3]
+    },
+    {
+      name: 'nonnumeric, negative, and non-finite',
+      cookies: { highScores: '[3,"9",-1,1e400,null,true,2.5]' },
+      expected: [3, 2.5, 0, 0, 0, 0, 0, 0, 0, 0]
+    }
+  ]
+
+  for (const fixture of cases) {
+    const engine = loadEngine([], { cookies: fixture.cookies })
+    let game
+    assert.doesNotThrow(() => {
+      game = engine.createGame()
+    }, fixture.name)
+    assert.deepEqual(plainScores(game), fixture.expected, fixture.name)
+    assert.deepEqual(JSON.parse(engine.cookieValue('highScores')), fixture.expected, fixture.name)
+    assert.equal(game.currentTet !== null, true, fixture.name)
+    assert.equal(typeof engine.document.onkeydown, 'function', fixture.name)
+
+    game.score = 6.25
+    assert.doesNotThrow(() => game.checkHighScore(), fixture.name)
+    const checked = plainScores(game)
+    assert.equal(checked.length, 10, fixture.name)
+    assert.equal(checked.every(score => Number.isFinite(score) && score >= 0), true, fixture.name)
+    assert.deepEqual(checked.slice().sort((a, b) => b - a), checked, fixture.name)
+  }
+})
+
+test('a valid descending top ten, including fractional scores, is preserved', () => {
+  const scores = [99.5, 80, 70.25, 60, 50, 40, 30, 20, 10, 0]
+  const engine = loadEngine([], { cookies: { highScores: JSON.stringify(scores) } })
+  const game = engine.createGame()
+
+  assert.deepEqual(plainScores(game), scores)
+  assert.deepEqual(JSON.parse(engine.cookieValue('highScores')), scores)
+  assert.equal(engine.cookieWrites(), 0)
+})
+
+test('cookie read failure keeps startup and in-memory score checking available', () => {
+  const engine = loadEngine([], { cookieReadError: true })
+  let game
+
+  assert.doesNotThrow(() => {
+    game = engine.createGame()
+  })
+  assert.equal(game.currentTet !== null, true)
+  assert.equal(typeof engine.document.onkeydown, 'function')
+  assert.deepEqual(plainScores(game), [0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+  game.score = 42.5
+  assert.doesNotThrow(() => game.checkHighScore())
+  assert.deepEqual(plainScores(game), [42.5, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+})
+
+test('cookie write failure keeps startup and in-memory score checking available', () => {
+  const engine = loadEngine([], { cookieWriteError: true })
+  let game
+
+  assert.doesNotThrow(() => {
+    game = engine.createGame()
+  })
+  assert.equal(game.currentTet !== null, true)
+  assert.equal(typeof engine.document.onkeydown, 'function')
+
+  game.score = 17.75
+  assert.doesNotThrow(() => game.checkHighScore())
+  assert.deepEqual(plainScores(game), [17.75, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+})
+
+test('non-finite current scores cannot contaminate a repaired score list', () => {
+  const engine = loadEngine([], { cookies: { highScores: '[10,5]' } })
+  const game = engine.createGame()
+
+  game.score = Infinity
+  assert.doesNotThrow(() => game.checkHighScore())
+  assert.deepEqual(plainScores(game), [10, 5, 0, 0, 0, 0, 0, 0, 0, 0])
 })

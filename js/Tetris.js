@@ -56,6 +56,8 @@
  *     display.
  * @property {boolean} updateScore - This is the boolean we check to see if we
  *     should update our high score list or not.
+ * @property {Array.<number>|null} highScores - The last usable high-score list,
+ *     retained in memory when cookies are unavailable.
  * @property {number} dropInterval - This is the interval, in milliseconds, for
  *     which our currentTet is going to drop 1 block.
  * @property {boolean} gameOver - If this is set to true, we handle the "game
@@ -95,6 +97,7 @@ function Game (canvasId, highScoresListId, devMode) {
   this.tetsToRemove = []
   this.score = 0
   this.updateScore = true
+  this.highScores = null
 
   // private vars
   this.dropInterval = 750 // 750
@@ -257,9 +260,7 @@ Game.prototype.handleEvents = function () {
         }
         break
       case 192: // tilde key to toggle dev mode
-        // Preserve the existing no-op behavior; changing controls is out of scope.
-        // eslint-disable-next-line no-self-assign
-        that.devModeOn = that.devModeOn
+        that.devModeOn = !that.devModeOn
         that.draw()
         break
       default:
@@ -642,27 +643,88 @@ Game.prototype.setCookie = function (cName, value, exDays) {
 }
 
 /**
- * This method gets the user's high scores from their cookie.
+ * This function repairs persisted high scores into the shape used by the game.
+ * @param {*} value - The value read from persistence.
+ * @returns {Array.<number>} Ten descending finite, non-negative scores.
+ */
+function normalizeHighScores (value) {
+  const scores = Array.isArray(value)
+    ? value.filter(function (score) {
+      return typeof score === 'number' && Number.isFinite(score) && score >= 0
+    })
+    : []
+  scores.sort(function (a, b) { return b - a })
+  scores.splice(10)
+  while (scores.length < 10) scores.push(0)
+  return scores
+}
+
+/**
+ * This function checks whether persisted scores already have the normalized
+ * shape, without mutating them.
+ * @param {*} value - The persisted value.
+ * @param {Array.<number>} normalized - Its normalized equivalent.
+ * @returns {boolean} Whether the values are semantically unchanged.
+ */
+function highScoresAreNormalized (value, normalized) {
+  if (!Array.isArray(value) || value.length !== normalized.length) return false
+  for (let i = 0; i < normalized.length; i++) {
+    if (value[i] !== normalized[i]) return false
+  }
+  return true
+}
+
+/**
+ * This method gets the user's high scores from their cookie. Invalid or
+ * unavailable cookie data falls back to the last usable in-memory list.
  * @author Jared Gotte <jareddgotte@gmail.com>
  * @returns {Array.<number>} This is the list of the high scores of the user.
  */
 Game.prototype.getHighScores = function () {
-  let tmp = JSON.parse(this.getCookie('highScores'))
-  if (tmp === null) {
-    tmp = [this.score, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    this.setHighScores(tmp)
+  let persisted
+  let repair = false
+  try {
+    const cookie = this.getCookie('highScores')
+    if (cookie === null) {
+      repair = true
+    } else {
+      try {
+        persisted = JSON.parse(cookie)
+      } catch (error) {
+        repair = true
+      }
+    }
+  } catch (error) {
+    repair = true
   }
-  return tmp
+
+  let candidate = persisted
+  if (!Array.isArray(candidate)) {
+    candidate = this.highScores || []
+    repair = true
+  }
+  const normalized = normalizeHighScores(candidate)
+  if (!highScoresAreNormalized(persisted, normalized)) repair = true
+  this.highScores = normalized
+  if (repair) this.setHighScores(normalized)
+  return normalized.slice()
 }
 
 /**
- * This method saves the user's high scores into the cookie.
+ * This method saves the user's high scores into the cookie and retains a usable
+ * in-memory copy if cookie writes are unavailable.
  * @author Jared Gotte <jareddgotte@gmail.com>
  * @param {Array.<number>} v - This is the list of the high scores we're going
  *     to save in the cookie.
  */
 Game.prototype.setHighScores = function (v) {
-  this.setCookie('highScores', JSON.stringify(v), 365)
+  const normalized = normalizeHighScores(v)
+  this.highScores = normalized
+  try {
+    this.setCookie('highScores', JSON.stringify(normalized), 365)
+  } catch (error) {
+    // The in-memory list remains usable when browser cookie writes are blocked.
+  }
 }
 
 /**
@@ -675,13 +737,15 @@ Game.prototype.checkHighScore = function () {
   const highScores = this.getHighScores()
   if (this.updateScore === true) {
     const hsLen = highScores.length
-    for (let i = 0; i < hsLen; i++) {
-      if (this.score > highScores[i]) {
-        highScores.splice(i, 0, this.score)
-        break
+    if (Number.isFinite(this.score) && this.score >= 0) {
+      for (let i = 0; i < hsLen; i++) {
+        if (this.score > highScores[i]) {
+          highScores.splice(i, 0, this.score)
+          break
+        }
       }
+      if (highScores.length > hsLen) highScores.pop()
     }
-    if (highScores.length > hsLen) highScores.pop()
     this.setHighScores(highScores)
     this.updateScore = false
   }
