@@ -125,12 +125,12 @@ function Game (canvasId, highScoresListId, devMode) {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Game.prototype.handleEvents = function () {
-  var that = this
+  const that = this
   // Pause if we lose focus of the game
   // Resume once we get focus back
   // We don't care about the Page Visibility API anymore because we don't have a
   // resource intensive game
-  var pausedBeforeBlur = true
+  let pausedBeforeBlur = true
   window.onblur = function () {
     if (that.gameOver === false) {
       pausedBeforeBlur = that.paused
@@ -182,7 +182,7 @@ Game.prototype.handleEvents = function () {
         break
       case 40: // down arrow to move Tet down
         if (that.canTetMove() === true) {
-          var skip = false
+          let skip = false
           if (that.newTet) skip = true
           if (!skip) clearInterval(that.loop)
           that.currentTet.moveDown()
@@ -257,6 +257,8 @@ Game.prototype.handleEvents = function () {
         }
         break
       case 192: // tilde key to toggle dev mode
+        // Preserve the existing no-op behavior; changing controls is out of scope.
+        // eslint-disable-next-line no-self-assign
         that.devModeOn = that.devModeOn
         that.draw()
         break
@@ -286,7 +288,7 @@ Game.prototype.canTetMove = function () {
  * @returns {string} This is the comma separated number.
  */
 function commaSeparateNumber (number) {
-  var tmp = Math.floor(number)
+  let tmp = Math.floor(number)
   if (tmp <= 99999999999999) {
     // from http://stackoverflow.com/a/12947816
     while (/(\d+)(\d{3})/.test(tmp.toString())) {
@@ -303,9 +305,9 @@ function commaSeparateNumber (number) {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Game.prototype.displayHighScores = function () {
-  var highScores = this.getHighScores()
-  var html = ''
-  for (var i = 0, len = highScores.length; i < len; i++) {
+  const highScores = this.getHighScores()
+  let html = ''
+  for (let i = 0, len = highScores.length; i < len; i++) {
     html += '<li>' + commaSeparateNumber(highScores[i]) + '</li>'
   }
   document.getElementById(this.highScoresListId).innerHTML = html
@@ -317,9 +319,9 @@ Game.prototype.displayHighScores = function () {
  */
 Game.prototype.draw = function () {
   // Keys respectively reflect the HTML color code of Tets: I, J, L, O, S, T, Z
-  var tetColor = ['#3cc', '#0af', '#f90', '#ee0', '#0c0', '#c0c', '#c00']
+  const tetColor = ['#3cc', '#0af', '#f90', '#ee0', '#0c0', '#c0c', '#c00']
 
-  var c = this.canvas.getContext('2d')
+  const c = this.canvas.getContext('2d')
   c.clearRect(0, 0, this.canvas.width, 2 * this.canvas.width) // clear canvas
 
   // Draw top panel
@@ -338,12 +340,14 @@ Game.prototype.draw = function () {
   c.fillText('Next:', 35, 50)
   c.beginPath()
   c.moveTo(
-      (this.nextTet.topLeft.col + this.nextTet.perimeter[0][0]) * this.blockS,
-      (this.nextTet.topLeft.row + this.nextTet.perimeter[0][1]) * this.blockS + 37)
-  for (var row = 1, len = this.nextTet.perimeter.length; row < len; row++) {
+    (this.nextTet.topLeft.col + this.nextTet.perimeter[0][0]) * this.blockS,
+    (this.nextTet.topLeft.row + this.nextTet.perimeter[0][1]) * this.blockS + 37)
+  let row
+  let len
+  for (row = 1, len = this.nextTet.perimeter.length; row < len; row++) {
     c.lineTo(
-        (this.nextTet.topLeft.col + this.nextTet.perimeter[row][0]) * this.blockS,
-        (this.nextTet.topLeft.row + this.nextTet.perimeter[row][1]) * this.blockS + 37)
+      (this.nextTet.topLeft.col + this.nextTet.perimeter[row][0]) * this.blockS,
+      (this.nextTet.topLeft.row + this.nextTet.perimeter[row][1]) * this.blockS + 37)
   }
   c.closePath()
   c.lineWidth = 2
@@ -377,7 +381,7 @@ Game.prototype.draw = function () {
 
   // Draw living Tet "shadow" at bottom and rotation
   if (!this.newTet) {
-    var tmpPotTopLeft = {
+    const tmpPotTopLeft = {
       row: this.currentTet.topLeft.row + 1,
       col: this.currentTet.topLeft.col
     }
@@ -387,12 +391,12 @@ Game.prototype.draw = function () {
     tmpPotTopLeft.row--
     c.beginPath()
     c.moveTo(
-        (tmpPotTopLeft.col + this.currentTet.perimeter[0][0]) * this.blockS,
-        (tmpPotTopLeft.row + this.currentTet.perimeter[0][1]) * this.blockS + this.panelHeight)
+      (tmpPotTopLeft.col + this.currentTet.perimeter[0][0]) * this.blockS,
+      (tmpPotTopLeft.row + this.currentTet.perimeter[0][1]) * this.blockS + this.panelHeight)
     for (row = 1, len = this.currentTet.perimeter.length; row < len; row++) {
       c.lineTo(
-          (tmpPotTopLeft.col + this.currentTet.perimeter[row][0]) * this.blockS,
-          (tmpPotTopLeft.row + this.currentTet.perimeter[row][1]) * this.blockS + this.panelHeight)
+        (tmpPotTopLeft.col + this.currentTet.perimeter[row][0]) * this.blockS,
+        (tmpPotTopLeft.row + this.currentTet.perimeter[row][1]) * this.blockS + this.panelHeight)
     }
     c.closePath()
     c.lineWidth = 2
@@ -403,16 +407,16 @@ Game.prototype.draw = function () {
 
     // draw pivot shadow
     if (this.currentTet.pivot > 0) {
-      var potPerimeter = this.currentTet.doesNotTetPivotCollide()
+      const potPerimeter = this.currentTet.doesNotTetPivotCollide()
       if (potPerimeter !== false) {
         c.beginPath()
         c.moveTo(
-            (this.currentTet.topLeft.col + potPerimeter[0][0] + this.currentTet.pivot) * this.blockS,
-            (this.currentTet.topLeft.row + potPerimeter[0][1]) * this.blockS + this.panelHeight)
+          (this.currentTet.topLeft.col + potPerimeter[0][0] + this.currentTet.pivot) * this.blockS,
+          (this.currentTet.topLeft.row + potPerimeter[0][1]) * this.blockS + this.panelHeight)
         for (row = 1, len = this.currentTet.perimeter.length; row < len; row++) {
           c.lineTo(
-              (this.currentTet.topLeft.col + potPerimeter[row][0] + this.currentTet.pivot) * this.blockS,
-              (this.currentTet.topLeft.row + potPerimeter[row][1]) * this.blockS + this.panelHeight)
+            (this.currentTet.topLeft.col + potPerimeter[row][0] + this.currentTet.pivot) * this.blockS,
+            (this.currentTet.topLeft.row + potPerimeter[row][1]) * this.blockS + this.panelHeight)
         }
         c.closePath()
         c.lineWidth = 2
@@ -427,16 +431,16 @@ Game.prototype.draw = function () {
   }
 
   // Draw all Tets
-  for (var tet = 0, aTLen = this.allTets.length; tet < aTLen; tet++) {
-    var currTet = this.allTets[tet]
+  for (let tet = 0, aTLen = this.allTets.length; tet < aTLen; tet++) {
+    const currTet = this.allTets[tet]
     c.beginPath()
     c.moveTo(
-        (currTet.topLeft.col + currTet.perimeter[0][0]) * this.blockS,
-        (currTet.topLeft.row + currTet.perimeter[0][1]) * this.blockS + this.panelHeight)
+      (currTet.topLeft.col + currTet.perimeter[0][0]) * this.blockS,
+      (currTet.topLeft.row + currTet.perimeter[0][1]) * this.blockS + this.panelHeight)
     for (row = 1, len = currTet.perimeter.length; row < len; row++) {
       c.lineTo(
-          (currTet.topLeft.col + currTet.perimeter[row][0]) * this.blockS,
-          (currTet.topLeft.row + currTet.perimeter[row][1]) * this.blockS + this.panelHeight)
+        (currTet.topLeft.col + currTet.perimeter[row][0]) * this.blockS,
+        (currTet.topLeft.row + currTet.perimeter[row][1]) * this.blockS + this.panelHeight)
     }
     c.closePath()
     c.lineWidth = 2
@@ -476,7 +480,7 @@ Game.prototype.draw = function () {
     c.strokeText(commaSeparateNumber(this.score), 14, 240)
     c.globalAlpha = 1
     // personal highest score
-    var highscores = this.checkHighScore()
+    const highscores = this.checkHighScore()
     c.fillStyle = '#fff'
     c.font = 'bold 17px Arial'
     c.fillText('Personal Highest Score:', 5, 270)
@@ -503,7 +507,7 @@ Game.prototype.draw = function () {
 Game.prototype.createTet = function () {
   // Make sure first Tet is not an S or Z
   if (this.nextTet === null) {
-    var t = parseInt(Math.floor(Math.random() * 7))
+    let t = parseInt(Math.floor(Math.random() * 7))
     if (t === 4 || t === 6) {
       t--
     }
@@ -533,7 +537,7 @@ Game.prototype.createTet = function () {
  */
 Game.prototype.tetDownLoop = function () {
   clearInterval(this.loop) // safe guard to prevent multiple loops from spawning before clearing it out first
-  var that = this
+  const that = this
   this.loop = setInterval(function () {
     if (that.dropOnce && that.newTet) clearInterval(that.loop)
     if (that.newTet) that.createTet()
@@ -553,14 +557,15 @@ Game.prototype.tetDownLoop = function () {
 Game.prototype.getLanded = function (tet) {
   if (tet !== undefined) this.updateLanded = true
   if (this.updateLanded) {
-    for (var i = 0; i < this.BOARD_ROW_NUM; i++) {
+    let i
+    for (i = 0; i < this.BOARD_ROW_NUM; i++) {
       this.landed[i] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
     i = 0
-    for (var aT = this.allTets, len = aT.length; i < len; i++) {
+    for (let aT = this.allTets, len = aT.length; i < len; i++) {
       if (aT[i] === this.currentTet || aT[i] === tet) continue
-      for (var row = 0, rLen = aT[i].shape.length; row < rLen; row++) {
-        for (var col = 0, cLen = aT[i].shape[row].length; col < cLen; col++) {
+      for (let row = 0, rLen = aT[i].shape.length; row < rLen; row++) {
+        for (let col = 0, cLen = aT[i].shape[row].length; col < cLen; col++) {
           if (aT[i].shape[row][col] !== 0) {
             this.landed[row + aT[i].topLeft.row][col + aT[i].topLeft.col] = 1
           }
@@ -580,9 +585,9 @@ Game.prototype.getLanded = function (tet) {
  *     be removed from the Tet shapes.
  */
 Game.prototype.alterShapes = function (fullRows) {
-  var firstRow = fullRows[0]
-  var lastRow = fullRows[fullRows.length - 1]
-  for (var tet = 0, len = this.allTets.length; tet < len; tet++) {
+  const firstRow = fullRows[0]
+  const lastRow = fullRows[fullRows.length - 1]
+  for (let tet = 0, len = this.allTets.length; tet < len; tet++) {
     if (this.allTets[tet].topLeft.row <= firstRow - 4 ||
         this.allTets[tet].topLeft.row > lastRow) {
       continue
@@ -590,7 +595,7 @@ Game.prototype.alterShapes = function (fullRows) {
     this.allTets[tet].alterShape(fullRows)
   }
   // this.tetsToRemove.sort(function(a,b){ return a - b }) // ensures indices are in numeric order
-  for (var i = 0, len2 = this.tetsToRemove.length; i < len2; i++) {
+  for (let i = 0, len2 = this.tetsToRemove.length; i < len2; i++) {
     this.allTets.splice(this.tetsToRemove[i] - i, 1)
   }
   this.tetsToRemove = []
@@ -606,13 +611,13 @@ Game.prototype.alterShapes = function (fullRows) {
  * @returns {string} This is the string extracted from our cookie.
  */
 Game.prototype.getCookie = function (cName) {
-  var cValue = document.cookie
-  var cStart = cValue.indexOf(' ' + cName + '=')
+  let cValue = document.cookie
+  let cStart = cValue.indexOf(' ' + cName + '=')
   if (cStart === -1) cStart = cValue.indexOf(cName + '=')
   if (cStart === -1) cValue = null
   else {
     cStart = cValue.indexOf('=', cStart) + 1
-    var cEnd = cValue.indexOf(';', cStart)
+    let cEnd = cValue.indexOf(';', cStart)
     if (cEnd === -1) cEnd = cValue.length
     cValue = unescape(cValue.substring(cStart, cEnd))
   }
@@ -629,9 +634,9 @@ Game.prototype.getCookie = function (cName) {
  * @param {number} exDays - This is the expiration date of the cookie.
  */
 Game.prototype.setCookie = function (cName, value, exDays) {
-  var exdate = new Date()
+  const exdate = new Date()
   exdate.setDate(exdate.getDate() + exDays)
-  var cValue = escape(value) +
+  const cValue = escape(value) +
       ((exDays === null) ? '' : '; expires=' + exdate.toUTCString())
   document.cookie = cName + '=' + cValue
 }
@@ -642,7 +647,7 @@ Game.prototype.setCookie = function (cName, value, exDays) {
  * @returns {Array.<number>} This is the list of the high scores of the user.
  */
 Game.prototype.getHighScores = function () {
-  var tmp = JSON.parse(this.getCookie('highScores'))
+  let tmp = JSON.parse(this.getCookie('highScores'))
   if (tmp === null) {
     tmp = [this.score, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     this.setHighScores(tmp)
@@ -667,10 +672,10 @@ Game.prototype.setHighScores = function (v) {
  * @returns {Array.<number>} This is the list of the high scores of the user.
  */
 Game.prototype.checkHighScore = function () {
-  var highScores = this.getHighScores()
+  const highScores = this.getHighScores()
   if (this.updateScore === true) {
-    var hsLen = highScores.length
-    for (var i = 0; i < hsLen; i++) {
+    const hsLen = highScores.length
+    for (let i = 0; i < hsLen; i++) {
       if (this.score > highScores[i]) {
         highScores.splice(i, 0, this.score)
         break
@@ -753,18 +758,18 @@ Tet.prototype.getShapeMatrix = function (rotation) {
   // The numbers in these arrays denote their eventual color.
   // NOTE: Trailing zeros were removed and replaced by spaces in the following
   // matrices as a gaming optimization (preventing unnecessary loop iterations).
-  /* eslint-disable comma-spacing, no-multi-spaces, standard/array-bracket-even-spacing */
-  var matrixMatrix = [
-    [ [[1,1,1,1]],       [[1],[1],[1],[1]] ], // I
-    [ [[1,1,1],[0,0,1]], [[0,1],[0,1],[1,1]], [[1    ],[1,1,1]], [[1,1],[1  ],[1  ]] ], // J
-    [ [[1,1,1],[1    ]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]], [[1  ],[1  ],[1,1]] ], // L
-    [ [[1,1],  [1,1]] ], // O
-    [ [[0,1,1],[1,1  ]], [[1  ],[1,1],[0,1]] ], // S
-    [ [[1,1,1],[0,1  ]], [[0,1],[1,1],[0,1]], [[0,1  ],[1,1,1]], [[1  ],[1,1],[1  ]] ], // T
-    [ [[1,1  ],[0,1,1]], [[0,1],[1,1],[1  ]] ] // Z
+  /* eslint-disable comma-spacing, no-multi-spaces */
+  const matrixMatrix = [
+    [[[1,1,1,1]],       [[1],[1],[1],[1]]], // I
+    [[[1,1,1],[0,0,1]], [[0,1],[0,1],[1,1]], [[1],[1,1,1]], [[1,1],[1],[1]]], // J
+    [[[1,1,1],[1]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]], [[1],[1],[1,1]]], // L
+    [[[1,1],  [1,1]]], // O
+    [[[0,1,1],[1,1]], [[1],[1,1],[0,1]]], // S
+    [[[1,1,1],[0,1]], [[0,1],[1,1],[0,1]], [[0,1],[1,1,1]], [[1],[1,1],[1]]], // T
+    [[[1,1],[0,1,1]], [[0,1],[1,1],[1]]] // Z
   ]
-  /* eslint-enable comma-spacing, no-multi-spaces, standard/array-bracket-even-spacing */
-  var m = matrixMatrix[this.type]
+  /* eslint-enable comma-spacing, no-multi-spaces */
+  const m = matrixMatrix[this.type]
   switch (this.type) {
     case 0: // I needs 3 pivots
       this.pivotMax = 3
@@ -803,50 +808,50 @@ Tet.prototype.getShapeMatrix = function (rotation) {
 Tet.prototype.getPerimeter = function (shape) {
   // NOTE: Trailing zeros were removed and replaced by spaces in the following
   // matrices as a gaming optimization (preventing unnecessary loop iterations).
-  /* eslint-disable comma-spacing, no-multi-spaces, standard/array-bracket-even-spacing */
-  var periMatrix = [
-    [ [[1]],               [[0,0],[0,1],[1,1],[1,0]] ], // fragments
-    [ [[1,1]],             [[0,0],[0,1],[2,1],[2,0]] ],
-    [ [[1],[1]],           [[0,0],[0,2],[1,2],[1,0]] ],
-    [ [[1,1,1]],           [[0,0],[0,1],[3,1],[3,0]] ],
-    [ [[1],[1],[1]],       [[0,0],[0,3],[1,3],[1,0]] ],
-    [ [[1,1],[0,1]],       [[0,0],[0,1],[1,1],[1,2],[2,2],[2,0]] ],
-    [ [[0,1],[1,1]],       [[1,0],[1,1],[0,1],[0,2],[2,2],[2,0]] ],
-    [ [[1  ],[1,1]],       [[0,0],[0,2],[2,2],[2,1],[1,1],[1,0]] ],
-    [ [[1,1],[1  ]],       [[0,0],[0,2],[1,2],[1,1],[2,1],[2,0]] ],
-    [ [[1,1,1,1]],         [[0,0],[0,1],[4,1],[4,0]] ], // I
-    [ [[1],[1],[1],[1]],   [[0,0],[0,4],[1,4],[1,0]] ],
-    [ [[1,1,1],[0,0,1]],   [[0,0],[0,1],[2,1],[2,2],[3,2],[3,0]] ], // J
-    [ [[0,1],[0,1],[1,1]], [[1,0],[1,2],[0,2],[0,3],[2,3],[2,0]] ],
-    [ [[1    ],[1,1,1]],   [[0,0],[0,2],[3,2],[3,1],[1,1],[1,0]] ],
-    [ [[1,1],[1  ],[1  ]], [[0,0],[0,3],[1,3],[1,1],[2,1],[2,0]] ],
-    [ [[1,1,1],[1    ]],   [[0,0],[0,2],[1,2],[1,1],[3,1],[3,0]] ], // L
-    [ [[1,1],[0,1],[0,1]], [[0,0],[0,1],[1,1],[1,3],[2,3],[2,0]] ],
-    [ [[0,0,1],[1,1,1]],   [[2,0],[2,1],[0,1],[0,2],[3,2],[3,0]] ],
-    [ [[1  ],[1  ],[1,1]], [[0,0],[0,3],[2,3],[2,2],[1,2],[1,0]] ],
-    [ [[1,1],[1,1]],       [[0,0],[0,2],[2,2],[2,0]] ], // O
-    [ [[0,1,1],[1,1  ]],   [[1,0],[1,1],[0,1],[0,2],[2,2],[2,1],[3,1],[3,0]] ], // S
-    [ [[1  ],[1,1],[0,1]], [[0,0],[0,2],[1,2],[1,3],[2,3],[2,1],[1,1],[1,0]] ],
-    [ [[1,1,1],[0,1  ]],   [[0,0],[0,1],[1,1],[1,2],[2,2],[2,1],[3,1],[3,0]] ], // T
-    [ [[0,1],[1,1],[0,1]], [[1,0],[1,1],[0,1],[0,2],[1,2],[1,3],[2,3],[2,0]] ],
-    [ [[0,1  ],[1,1,1]],   [[1,0],[1,1],[0,1],[0,2],[3,2],[3,1],[2,1],[2,0]] ],
-    [ [[1  ],[1,1],[1  ]], [[0,0],[0,3],[1,3],[1,2],[2,2],[2,1],[1,1],[1,0]] ],
-    [ [[1,1  ],[0,1,1]],   [[0,0],[0,1],[1,1],[1,2],[3,2],[3,1],[2,1],[2,0]] ], // Z
-    [ [[0,1],[1,1],[1  ]], [[1,0],[1,1],[0,1],[0,3],[1,3],[1,2],[2,2],[2,0]] ]
+  /* eslint-disable comma-spacing, no-multi-spaces */
+  const periMatrix = [
+    [[[1]],               [[0,0],[0,1],[1,1],[1,0]]], // fragments
+    [[[1,1]],             [[0,0],[0,1],[2,1],[2,0]]],
+    [[[1],[1]],           [[0,0],[0,2],[1,2],[1,0]]],
+    [[[1,1,1]],           [[0,0],[0,1],[3,1],[3,0]]],
+    [[[1],[1],[1]],       [[0,0],[0,3],[1,3],[1,0]]],
+    [[[1,1],[0,1]],       [[0,0],[0,1],[1,1],[1,2],[2,2],[2,0]]],
+    [[[0,1],[1,1]],       [[1,0],[1,1],[0,1],[0,2],[2,2],[2,0]]],
+    [[[1],[1,1]],       [[0,0],[0,2],[2,2],[2,1],[1,1],[1,0]]],
+    [[[1,1],[1]],       [[0,0],[0,2],[1,2],[1,1],[2,1],[2,0]]],
+    [[[1,1,1,1]],         [[0,0],[0,1],[4,1],[4,0]]], // I
+    [[[1],[1],[1],[1]],   [[0,0],[0,4],[1,4],[1,0]]],
+    [[[1,1,1],[0,0,1]],   [[0,0],[0,1],[2,1],[2,2],[3,2],[3,0]]], // J
+    [[[0,1],[0,1],[1,1]], [[1,0],[1,2],[0,2],[0,3],[2,3],[2,0]]],
+    [[[1],[1,1,1]],   [[0,0],[0,2],[3,2],[3,1],[1,1],[1,0]]],
+    [[[1,1],[1],[1]], [[0,0],[0,3],[1,3],[1,1],[2,1],[2,0]]],
+    [[[1,1,1],[1]],   [[0,0],[0,2],[1,2],[1,1],[3,1],[3,0]]], // L
+    [[[1,1],[0,1],[0,1]], [[0,0],[0,1],[1,1],[1,3],[2,3],[2,0]]],
+    [[[0,0,1],[1,1,1]],   [[2,0],[2,1],[0,1],[0,2],[3,2],[3,0]]],
+    [[[1],[1],[1,1]], [[0,0],[0,3],[2,3],[2,2],[1,2],[1,0]]],
+    [[[1,1],[1,1]],       [[0,0],[0,2],[2,2],[2,0]]], // O
+    [[[0,1,1],[1,1]],   [[1,0],[1,1],[0,1],[0,2],[2,2],[2,1],[3,1],[3,0]]], // S
+    [[[1],[1,1],[0,1]], [[0,0],[0,2],[1,2],[1,3],[2,3],[2,1],[1,1],[1,0]]],
+    [[[1,1,1],[0,1]],   [[0,0],[0,1],[1,1],[1,2],[2,2],[2,1],[3,1],[3,0]]], // T
+    [[[0,1],[1,1],[0,1]], [[1,0],[1,1],[0,1],[0,2],[1,2],[1,3],[2,3],[2,0]]],
+    [[[0,1],[1,1,1]],   [[1,0],[1,1],[0,1],[0,2],[3,2],[3,1],[2,1],[2,0]]],
+    [[[1],[1,1],[1]], [[0,0],[0,3],[1,3],[1,2],[2,2],[2,1],[1,1],[1,0]]],
+    [[[1,1],[0,1,1]],   [[0,0],[0,1],[1,1],[1,2],[3,2],[3,1],[2,1],[2,0]]], // Z
+    [[[0,1],[1,1],[1]], [[1,0],[1,1],[0,1],[0,3],[1,3],[1,2],[2,2],[2,0]]]
   ]
-  /* eslint-enable comma-spacing, no-multi-spaces, standard/array-bracket-even-spacing */
-  var checkNextShape
+  /* eslint-enable comma-spacing, no-multi-spaces */
+  let checkNextShape
   // Iterate through periMatrix to see if the given shape matches a shape within
   // this array
-  for (var pRow = 0, pLen = periMatrix.length; pRow < pLen; pRow++) {
+  for (let pRow = 0, pLen = periMatrix.length; pRow < pLen; pRow++) {
     checkNextShape = false
-    for (var row = 0, rLen = shape.length; row < rLen; row++) {
+    for (let row = 0, rLen = shape.length; row < rLen; row++) {
       if (rLen !== periMatrix[pRow][0].length) {
         checkNextShape = true
         break
       }
       if (checkNextShape) break
-      for (var col = 0, cLen = shape[row].length; col < cLen; col++) {
+      for (let col = 0, cLen = shape[row].length; col < cLen; col++) {
         if (shape[row].length !== periMatrix[pRow][0][row].length) {
           checkNextShape = true
           break
@@ -889,16 +894,15 @@ Tet.prototype.setShape = function (shape) {
  * @returns {boolean} Currently, we don't care about the actual return value.
  */
 Tet.prototype.rotate = function () { // by default, always clockwise
-  var landed = this.game.getLanded()
-  var potRot = this.rotation
-  var potShape
+  const landed = this.game.getLanded()
+  let potRot = this.rotation
   potRot = (potRot < 3 ? potRot + 1 : 0)
-  potShape = this.getShapeMatrix(potRot)
+  const potShape = this.getShapeMatrix(potRot)
   // check for potential collisions at the column the Tet will actually end up
   // in once the pivot shift below is applied
-  var potCol = this.topLeft.col + this.pivot
-  for (var row = 0, rLen = potShape.length; row < rLen; row++) {
-    for (var col = 0, cLen = potShape[row].length; col < cLen; col++) {
+  const potCol = this.topLeft.col + this.pivot
+  for (let row = 0, rLen = potShape.length; row < rLen; row++) {
+    for (let col = 0, cLen = potShape[row].length; col < cLen; col++) {
       if (potShape[row][col] !== 0) {
         if (col + potCol < 0) {
           // console.log('left beyond playing field')
@@ -933,17 +937,16 @@ Tet.prototype.rotate = function () { // by default, always clockwise
  *     the getPerimeter() method.
  */
 Tet.prototype.doesNotTetPivotCollide = function () {
-  var potRot = this.rotation
-  var potentialTopLeft = {
+  let potRot = this.rotation
+  const potentialTopLeft = {
     row: this.topLeft.row,
     col: this.topLeft.col + this.pivot
   }
-  var potShape
-  var landed = this.game.getLanded(this)
+  const landed = this.game.getLanded(this)
   potRot = potRot < 3 ? potRot + 1 : 0
-  potShape = this.getShapeMatrix(potRot)
-  for (var row = 0, rLen = potShape.length; row < rLen; row++) {
-    for (var col = 0, cLen = potShape[row].length; col < cLen; col++) {
+  const potShape = this.getShapeMatrix(potRot)
+  for (let row = 0, rLen = potShape.length; row < rLen; row++) {
+    for (let col = 0, cLen = potShape[row].length; col < cLen; col++) {
       if (potShape[row][col] !== 0) {
         if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
           // console.log('below playing field')
@@ -981,9 +984,9 @@ Tet.prototype.doesNotTetPivotCollide = function () {
  * @returns {boolean} If Tet colides, return true; else, false.
  */
 Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
-  var landed = this.game.getLanded(this)
-  for (var row = 0, rLen = this.shape.length; row < rLen; row++) {
-    for (var col = 0, cLen = this.shape[row].length; col < cLen; col++) {
+  const landed = this.game.getLanded(this)
+  for (let row = 0, rLen = this.shape.length; row < rLen; row++) {
+    for (let col = 0, cLen = this.shape[row].length; col < cLen; col++) {
       if (this.shape[row][col] !== 0) {
         if (row + potentialTopLeft.row >= this.game.BOARD_ROW_NUM) {
           // console.log('below playing field')
@@ -1012,9 +1015,9 @@ Tet.prototype.doesTetCollideBot = function (potentialTopLeft) {
  * @returns {boolean} If Tet colides, return true; else, false.
  */
 Tet.prototype.doesTetCollideSide = function (potentialTopLeft, direction) {
-  var landed = this.game.getLanded()
-  for (var row = 0, rLen = this.shape.length; row < rLen; row++) {
-    for (var col = 0, cLen = this.shape[row].length; col < cLen; col++) {
+  const landed = this.game.getLanded()
+  for (let row = 0, rLen = this.shape.length; row < rLen; row++) {
+    for (let col = 0, cLen = this.shape[row].length; col < cLen; col++) {
       if (this.shape[row][col] !== 0) {
         if (col + potentialTopLeft.col < 0) {
           // console.log('left beyond playing field');
@@ -1049,7 +1052,7 @@ Tet.prototype.doesTetCollideSide = function (potentialTopLeft, direction) {
  */
 Tet.prototype.moveLeft = function () {
   this.pivot = 0
-  var potentialTopLeft = {
+  const potentialTopLeft = {
     row: this.topLeft.row,
     col: this.topLeft.col - 1
   }
@@ -1064,7 +1067,7 @@ Tet.prototype.moveLeft = function () {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Tet.prototype.moveRight = function () {
-  var potentialTopLeft = {
+  const potentialTopLeft = {
     row: this.topLeft.row,
     col: this.topLeft.col + 1
   }
@@ -1081,7 +1084,7 @@ Tet.prototype.moveRight = function () {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Tet.prototype.moveDown = function () {
-  var potentialTopLeft = {
+  const potentialTopLeft = {
     row: this.topLeft.row + 1,
     col: this.topLeft.col
   }
@@ -1104,14 +1107,13 @@ Tet.prototype.moveDown = function () {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Tet.prototype.collided = function () {
-  var landed = this.game.getLanded()
-  var isFilled
-  var fullRows = []
-  var fRLen
+  const landed = this.game.getLanded()
+  let isFilled
+  const fullRows = []
   // Find the rows we're going to eliminate
-  for (var row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
+  for (let row = this.topLeft.row; row < this.game.BOARD_ROW_NUM; row++) {
     isFilled = true
-    for (var col = 0; col < this.game.BOARD_COL_NUM; col++) {
+    for (let col = 0; col < this.game.BOARD_COL_NUM; col++) {
       if (landed[row][col] === 0) {
         isFilled = false
       }
@@ -1119,7 +1121,7 @@ Tet.prototype.collided = function () {
     if (isFilled) fullRows.push(row)
   }
   this.game.updateLanded = true
-  fRLen = fullRows.length
+  const fRLen = fullRows.length
   if (fRLen === 0) return
   // Adjust score (Scale the point rewarded for filling rows to benefit those
   // that break more at one time.)
@@ -1128,16 +1130,16 @@ Tet.prototype.collided = function () {
   this.game.alterShapes(fullRows)
   this.game.updateLanded = true
   // Perform falling animations
-  var that = this
-  var movingTets = [0]
-  var tetsMoved
-  var moveLoop = setInterval(function () {
+  const that = this
+  let movingTets = [0]
+  let tetsMoved
+  const moveLoop = setInterval(function () {
     movingTets = []
     tetsMoved = true
     while (tetsMoved) {
       tetsMoved = false
-      for (var tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;
-            tet < tLen; tet++) {
+      for (let tet = 0, aT = that.game.allTets, tLen = aT.length, potTL = null;
+        tet < tLen; tet++) {
         if (movingTets.indexOf(aT[tet], 0) > -1 ||
             (aT[tet] === that.game.currentTet && that.game.newTet !== true)) {
           continue
@@ -1176,13 +1178,15 @@ Tet.prototype.collided = function () {
  *     is the cleaned up shape, without extraneous zeros, and adjusted topLeft.
  */
 Tet.prototype.cleanShape = function (o) {
-  var shape = o.shape
-  var topLeft = o.topLeft
-  var done = false
+  const shape = o.shape
+  const topLeft = o.topLeft
+  let done = false
   // If there exists columns of all zeros on the far left, remove all those
   // columns
+  let row
+  let len
   while (true) {
-    for (var row = 0, len = shape.length; row < len; row++) {
+    for (row = 0, len = shape.length; row < len; row++) {
       if (shape[row][0] > 0) {
         done = true
         break
@@ -1197,7 +1201,7 @@ Tet.prototype.cleanShape = function (o) {
   }
   // If there exists zeros at the end of each row array, remove those zeros
   for (row = 0, len = shape.length; row < len; row++) {
-    for (var col = shape[row].length - 1; col >= 0; col--) {
+    for (let col = shape[row].length - 1; col >= 0; col--) {
       if (shape[row][col] === 0) {
         shape[row].splice(col, 1)
         continue
@@ -1205,7 +1209,7 @@ Tet.prototype.cleanShape = function (o) {
       break
     }
   }
-  return { shape: shape, topLeft: topLeft }
+  return { shape, topLeft }
 }
 
 /**
@@ -1214,7 +1218,7 @@ Tet.prototype.cleanShape = function (o) {
  * @returns {boolean} If itself is all zeros, return true; else, false.
  */
 function arrayIsAllZeros (arr) {
-  for (var col = 0, len = arr.length; col < len; col++) {
+  for (let col = 0, len = arr.length; col < len; col++) {
     if (arr[col] > 0) return false
   }
   return true
@@ -1227,11 +1231,11 @@ function arrayIsAllZeros (arr) {
  * @author Jared Gotte <jareddgotte@gmail.com>
  */
 Tet.prototype.updateTet = function () {
-  var currShape = []
-  var topLeft
-  var q = []
+  let currShape = []
+  let topLeft
+  const q = []
   // Iterate through the altered shape to build multiple fragments if necessary
-  for (var row = 0, len = this.shape.length; row < len; row++) {
+  for (let row = 0, len = this.shape.length; row < len; row++) {
     // If we do not come across a row with all zeros, continue building our shape
     if (!arrayIsAllZeros(this.shape[row])) {
       if (currShape.length === 0) {
@@ -1242,18 +1246,18 @@ Tet.prototype.updateTet = function () {
     // shape to potentially build another
     } else {
       if (currShape.length === 0) continue
-      q.push({ shape: currShape, topLeft: topLeft })
+      q.push({ shape: currShape, topLeft })
       currShape = []
     }
   }
-  if (currShape.length > 0) q.push({ shape: currShape, topLeft: topLeft })
+  if (currShape.length > 0) q.push({ shape: currShape, topLeft })
   if (q.length === 0) {
     // Remove this Tet from allTets if shape is a zero'd matrix (Tet completely gone)
     this.game.tetsToRemove.push(this.game.allTets.indexOf(this))
   }
   // Iterate through our queue
-  for (var qs = 0, len2 = q.length; qs < len2; qs++) {
-    var tmp = this.cleanShape(q[qs])
+  for (let qs = 0, len2 = q.length; qs < len2; qs++) {
+    const tmp = this.cleanShape(q[qs])
     // For the first object in the queue, keep our current Tet and just set the shape
     if (qs === 0) {
       this.topLeft = tmp.topLeft
@@ -1261,7 +1265,7 @@ Tet.prototype.updateTet = function () {
     // For all other objects in the queue, create a new Tet class and set its
     // shape, then push this new Tet onto the allTets Game class property
     } else {
-      var newTet = new Tet(this.game, -1)
+      const newTet = new Tet(this.game, -1)
       newTet.type = this.type
       newTet.topLeft = tmp.topLeft
       newTet.setShape(tmp.shape)
@@ -1278,12 +1282,13 @@ Tet.prototype.updateTet = function () {
  *     were marked as full in the collided method above.
  */
 Tet.prototype.alterShape = function (fullRows) {
-  for (var i = 0, len = fullRows.length, row; i < len; i++) {
+  let row
+  for (let i = 0, len = fullRows.length; i < len; i++) {
     row = fullRows[i] - this.topLeft.row
     if (row < 0 || row > this.shape.length - 1) {
       continue
     }
-    for (var col = 0, cLen = this.shape[row].length; col < cLen; col++) {
+    for (let col = 0, cLen = this.shape[row].length; col < cLen; col++) {
       this.shape[row][col] = 0
     }
   }
