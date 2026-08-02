@@ -29,8 +29,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # fetch-depth: 0 so the review plugin can diff against the base branch
-          fetch-depth: 0
+          # The review reads the diff through the GitHub API (`gh pr diff`), never
+          # from local history, so a shallow checkout is sufficient.
+          fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
@@ -49,8 +50,8 @@ jobs:
           # it the skill hand-rolls `gh api ... -F line=N`, which is far more fragile.
           # Bash is scoped to the read-only inspection commands the review needs.
           claude_args: '--allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"'
-          # Temporary diagnostic: surface tool calls + permission denials in the run log
-          show_full_output: true
+          # To debug a review that posts nothing, temporarily add `show_full_output: true`
+          # to reveal tool calls and permission denials, which are otherwise silent.
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
