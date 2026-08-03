@@ -50,8 +50,11 @@ jobs:
           # it the skill hand-rolls `gh api ... -F line=N`, which is far more fragile.
           # Bash is scoped to the read-only inspection commands the review needs.
           claude_args: '--allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"'
-          # To debug a review that posts nothing, temporarily add `show_full_output: true`
-          # to reveal tool calls and permission denials, which are otherwise silent.
+          # TEMPORARY: re-enabled to diagnose reviews that complete but post nothing.
+          # Note that rerunning with ACTIONS_STEP_DEBUG does NOT substitute for this --
+          # it adds GitHub step logging only and emits no model output. Revert once the
+          # cause is identified; this writes full model output to public Actions logs.
+          show_full_output: true
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
