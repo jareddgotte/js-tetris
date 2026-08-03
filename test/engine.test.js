@@ -15,6 +15,35 @@ function loadEngine (randomValues = [], options = {}) {
   const cookies = new Map(Object.entries(options.cookies || {}))
   const canvasText = []
   let cookieWrites = 0
+
+  function createEventTarget () {
+    const listeners = new Map()
+    return {
+      addEventListener (type, listener) {
+        if (!listeners.has(type)) listeners.set(type, [])
+        listeners.get(type).push(listener)
+      },
+      removeEventListener (type, listener) {
+        if (!listeners.has(type)) return
+        const remaining = listeners.get(type).filter(entry => entry !== listener)
+        if (remaining.length > 0) {
+          listeners.set(type, remaining)
+        } else {
+          listeners.delete(type)
+        }
+      },
+      dispatchEvent (event) {
+        const handlers = listeners.get(event.type) || []
+        for (const handler of handlers.slice()) {
+          handler(event)
+        }
+      },
+      listenerCount (type) {
+        return (listeners.get(type) || []).length
+      }
+    }
+  }
+
   const canvasContext = {
     beginPath () {},
     clearRect () {},
@@ -29,19 +58,21 @@ function loadEngine (randomValues = [], options = {}) {
     stroke () {},
     strokeText () {}
   }
-  const canvas = {
-    getContext () {
-      return canvasContext
-    }
+  const canvas = createEventTarget()
+  canvas.tagName = 'CANVAS'
+  canvas.getContext = function () {
+    return canvasContext
   }
+  canvas.focus = function () {}
+
   const highScores = { innerHTML: '' }
-  const document = {
-    getElementById (id) {
-      if (id === 'game') return canvas
-      if (id === 'high-scores') return highScores
-      return null
-    },
-    onkeydown: null
+  const document = createEventTarget()
+  document.body = { tagName: 'BODY' }
+  document.documentElement = { tagName: 'HTML' }
+  document.getElementById = function (id) {
+    if (id === 'game') return canvas
+    if (id === 'high-scores') return highScores
+    return null
   }
   Object.defineProperty(document, 'cookie', {
     get () {
@@ -64,6 +95,7 @@ function loadEngine (randomValues = [], options = {}) {
     return queuedRandomValues.length > 0 ? queuedRandomValues.shift() : 0
   }
 
+  const windowTarget = createEventTarget()
   const context = vm.createContext({
     clearInterval (id) {
       intervals.delete(id)
@@ -76,15 +108,55 @@ function loadEngine (randomValues = [], options = {}) {
       intervals.set(id, callback)
       return id
     },
-    window: {}
+    window: windowTarget
   })
 
   vm.runInContext(engineSource, context, { filename: 'js/Tetris.js' })
   vm.runInContext(fixturesSource, context, { filename: 'js/TestCase.js' })
 
+  function translateKeyInput (input) {
+    if (typeof input === 'number') {
+      if (input >= 48 && input <= 57) {
+        return { key: String(input - 48), code: 'Digit' + String(input - 48), keyCode: input }
+      }
+      const mapping = {
+        32: { key: ' ', code: 'Space' },
+        35: { key: 'End', code: 'End' },
+        37: { key: 'ArrowLeft', code: 'ArrowLeft' },
+        38: { key: 'ArrowUp', code: 'ArrowUp' },
+        39: { key: 'ArrowRight', code: 'ArrowRight' },
+        40: { key: 'ArrowDown', code: 'ArrowDown' },
+        71: { key: 'g', code: 'KeyG' },
+        72: { key: 'h', code: 'KeyH' },
+        80: { key: 'p', code: 'KeyP' },
+        82: { key: 'r', code: 'KeyR' },
+        83: { key: 's', code: 'KeyS' },
+        192: { key: '`', code: 'Backquote' }
+      }
+      return Object.assign({ keyCode: input }, mapping[input] || {})
+    }
+    if (typeof input === 'string') {
+      return { key: input, code: input, keyCode: input.charCodeAt(0) }
+    }
+    return Object.assign({}, input)
+  }
+
+  function dispatchEvent (target, type, init) {
+    const event = Object.assign({
+      type,
+      defaultPrevented: false,
+      preventDefault () {
+        this.defaultPrevented = true
+      }
+    }, init)
+    target.dispatchEvent(event)
+    return event
+  }
+
   return {
     Game: context.Game,
     Tet: context.Tet,
+    canvas,
     canvasText,
     cookieValue (name) {
       const value = cookies.get(name)
@@ -97,8 +169,11 @@ function loadEngine (randomValues = [], options = {}) {
     createGame (devMode = false) {
       return new context.Game('game', 'high-scores', devMode)
     },
-    dispatchKey (keyCode) {
-      document.onkeydown({ keyCode })
+    dispatchKey (input, overrides = {}) {
+      return dispatchEvent(document, 'keydown', Object.assign({ target: document.body }, translateKeyInput(input), overrides))
+    },
+    dispatchWindowEvent (type, overrides = {}) {
+      return dispatchEvent(windowTarget, type, overrides)
     },
     document,
     pendingIntervals () {
@@ -126,6 +201,18 @@ function emptyGame (engine) {
   game.newTet = true
   game.updateLanded = true
   return game
+}
+
+function activeTetGame (engine, tetType = 3) {
+  const game = emptyGame(engine)
+  const tet = new engine.Tet(game, tetType)
+  tet.topLeft = { row: 5, col: 4 }
+  game.currentTet = tet
+  game.allTets = [tet]
+  game.newTet = false
+  game.paused = false
+  game.gameOver = false
+  return { game, tet }
 }
 
 function occupiedCells (game) {
@@ -349,6 +436,71 @@ test('constructor-enabled developer mode still permits gated fixtures', () => {
   assert.deepEqual(fixtureCalls, [7])
 })
 
+test('keyboard actions are mapped by name and prevent default only when handled', () => {
+  const engine = loadEngine()
+  const { game, tet } = activeTetGame(engine)
+
+  const left = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft' })
+  assert.equal(left.defaultPrevented, true)
+  assert.equal(tet.topLeft.col, 3)
+
+  game.paused = true
+  const blocked = engine.dispatchKey({ key: 'ArrowRight', code: 'ArrowRight' })
+  assert.equal(blocked.defaultPrevented, false)
+  assert.equal(tet.topLeft.col, 3)
+
+  game.paused = false
+  const pause = engine.dispatchKey({ key: 'P', code: 'KeyP' })
+  assert.equal(pause.defaultPrevented, true)
+  assert.equal(game.paused, true)
+
+  const resume = engine.dispatchKey({ key: 'p', code: 'KeyP' })
+  assert.equal(resume.defaultPrevented, true)
+  assert.equal(game.paused, false)
+
+  const ignored = engine.dispatchKey({ key: 'q', code: 'KeyQ' })
+  assert.equal(ignored.defaultPrevented, false)
+})
+
+test('keyboard input ignores editable and unrelated targets', () => {
+  const engine = loadEngine()
+  const { tet } = activeTetGame(engine)
+  const input = { tagName: 'INPUT' }
+  const link = { tagName: 'A' }
+
+  const editable = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: input })
+  assert.equal(editable.defaultPrevented, false)
+  assert.equal(tet.topLeft.col, 4)
+
+  const unrelated = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: link })
+  assert.equal(unrelated.defaultPrevented, false)
+  assert.equal(tet.topLeft.col, 4)
+})
+
+test('blur pauses an active game and focus resumes only after blur-triggered pause', () => {
+  const engine = loadEngine()
+  const game = engine.createGame()
+
+  game.resumeGame()
+  assert.equal(game.paused, false)
+  assert.equal(engine.pendingIntervals(), 1)
+
+  engine.dispatchWindowEvent('blur')
+  assert.equal(game.paused, true)
+  assert.equal(engine.pendingIntervals(), 0)
+
+  engine.dispatchWindowEvent('focus')
+  assert.equal(game.paused, false)
+  assert.equal(engine.pendingIntervals(), 1)
+
+  game.pauseGame()
+  assert.equal(game.paused, true)
+  engine.dispatchWindowEvent('blur')
+  engine.dispatchWindowEvent('focus')
+  assert.equal(game.paused, true)
+  assert.equal(engine.pendingIntervals(), 0)
+})
+
 test('high-score cookies are normalized and repaired across invalid shapes', () => {
   const cases = [
     {
@@ -392,7 +544,8 @@ test('high-score cookies are normalized and repaired across invalid shapes', () 
     assert.deepEqual(plainScores(game), fixture.expected, fixture.name)
     assert.deepEqual(JSON.parse(engine.cookieValue('highScores')), fixture.expected, fixture.name)
     assert.equal(game.currentTet !== null, true, fixture.name)
-    assert.equal(typeof engine.document.onkeydown, 'function', fixture.name)
+    assert.equal(engine.document.onkeydown, undefined, fixture.name)
+    assert.equal(engine.document.listenerCount('keydown'), 1, fixture.name)
 
     game.score = 6.25
     assert.doesNotThrow(() => game.checkHighScore(), fixture.name)
@@ -421,7 +574,8 @@ test('cookie read failure keeps startup and in-memory score checking available',
     game = engine.createGame()
   })
   assert.equal(game.currentTet !== null, true)
-  assert.equal(typeof engine.document.onkeydown, 'function')
+  assert.equal(engine.document.onkeydown, undefined)
+  assert.equal(engine.document.listenerCount('keydown'), 1)
   assert.deepEqual(plainScores(game), [0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
   game.score = 42.5
@@ -437,7 +591,8 @@ test('cookie write failure keeps startup and in-memory score checking available'
     game = engine.createGame()
   })
   assert.equal(game.currentTet !== null, true)
-  assert.equal(typeof engine.document.onkeydown, 'function')
+  assert.equal(engine.document.onkeydown, undefined)
+  assert.equal(engine.document.listenerCount('keydown'), 1)
 
   game.score = 17.75
   assert.doesNotThrow(() => game.checkHighScore())

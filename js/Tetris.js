@@ -105,6 +105,7 @@ function Game (canvasId, highScoresListId, devMode) {
   this.canvasWidth = 200
   this.blockS = this.canvasWidth / 10 // Assume block width and height will always be the same
   this.canvas = document.getElementById(canvasId)
+  this.canvas.tabIndex = 0
   this.canvas.width = this.canvasWidth
   this.canvas.height = 2 * this.canvasWidth
   this.panelHeight = Math.round((2 - this.BOARD_ROW_NUM / this.BOARD_COL_NUM) *
@@ -120,152 +121,206 @@ function Game (canvasId, highScoresListId, devMode) {
 }
 
 /**
- * This method creates 3 event listeners (2 for the window and 1 for the
- * document). The 2 events for the window are onblur and onfocus. These will
- * pause the game when you leave the game window and resume it when you come
- * back. The event for the document listens for onkeydown events. These
- * basically allow the user to interact with the game.
- * @author Jared Gotte <jareddgotte@gmail.com>
+ * This method creates event listeners for the window and document. The
+ * window listeners pause the game when focus leaves the page and resume it
+ * when focus returns. The keyboard listener keeps gameplay input scoped to the
+ * game surface or the page body so editable controls and unrelated targets can
+ * keep their native browser behavior.
+ * @author Jared Gotte <jaredgotte@gmail.com>
  */
 Game.prototype.handleEvents = function () {
   const that = this
-  // Pause if we lose focus of the game
-  // Resume once we get focus back
-  // We don't care about the Page Visibility API anymore because we don't have a
-  // resource intensive game
   let pausedBeforeBlur = true
-  window.onblur = function () {
+
+  window.addEventListener('blur', function () {
     if (that.gameOver === false) {
       pausedBeforeBlur = that.paused
-      clearInterval(that.loop)
-      that.paused = true
-      that.draw()
+      that.pauseGame()
     }
-  }
-  window.onfocus = function () {
-    if (!pausedBeforeBlur && that.gameOver === false) {
-      if (!that.gameOver) {
-        that.tetDownLoop()
-      }
-      that.paused = false
-      that.draw()
-    }
-  }
+  })
 
-  // Handle key events
-  // For keycodes: http://www.javascripter.net/faq/keycodes.htm
-  document.onkeydown = function (e) {
-    switch (e.keyCode) {
-      case 32: // space to move living Tet all the way down
-        if (that.canTetMove() === true) {
-          while (!that.newTet) {
-            that.currentTet.moveDown()
-          }
-          that.draw()
-          that.tetDownLoop()
-        }
-        break
-      case 38: // up arrow to rotate Tet clockwise
-        if (that.canTetMove() === true) {
-          that.currentTet.rotate()
-          that.draw()
-        }
-        break
-      case 37: // left arrow to move Tet left
-        if (that.canTetMove() === true) {
-          that.currentTet.moveLeft()
-          that.draw()
-        }
-        break
-      case 39: // right arrow to move Tet right
-        if (that.canTetMove() === true) {
-          that.currentTet.moveRight()
-          that.draw()
-        }
-        break
-      case 40: // down arrow to move Tet down
-        if (that.canTetMove() === true) {
-          let skip = false
-          if (that.newTet) skip = true
-          if (!skip) clearInterval(that.loop)
-          that.currentTet.moveDown()
-          that.draw()
-          if (!skip && !that.paused) that.tetDownLoop()
-        }
-        break
-      case 80: case 83: // p for pause, s for stop (they do same thing)
-        if (that.gameOver === false) {
-          if (!that.paused) {
-            clearInterval(that.loop)
-            that.paused = true
-            that.draw()
-          } else {
-            if (that.gameOver === false) {
-              that.tetDownLoop()
-              that.dropOnce = false
-            }
-            that.paused = false
-            that.draw()
-          }
-        }
-        break
-      case 82: // r for reset
-        that.allTets = []
-        clearInterval(that.loop)
-        that.currentTet = null
-        that.gameOver = false
-        that.newTet = true
-        that.nextTet = null
-        that.paused = true
-        that.score = 0
-        that.updateScore = true
-        that.createTet()
-        break
-      // Developer's Controls
-      case 35: // end key to move Tet up
-        if (that.devModeOn) {
-          if (that.currentTet.topLeft.row > 0) {
-            that.currentTet.topLeft.row--
-          }
-          that.draw()
-        }
-        break
-      case 48: case 49: case 50: case 51: case 52: // test cases found in TestCase.js
-      case 53: case 54: case 55: case 56: case 57: // number keys 0 to 9 (not numpad)
-        if (that.devModeOn) {
-          that.allTets = []
-          that.gameOver = false
-          that.score = 0
-          that.updateScore = true
-          that.testCase(e.keyCode - 48)
-          that.createTet()
-          that.tetDownLoop()
-        }
-        break
-      case 71: // g for game over
-        if (that.devModeOn) {
-          that.gameOver = true
-          clearInterval(that.loop)
-          // that.score = 1939999955999999 // near max
-          that.score = Math.random() * 100000
-          that.updateScore = true
-          that.draw()
-        }
-        break
-      case 72: // h to reset high score to zero
-        if (that.devModeOn) {
-          that.setHighScores([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-          that.displayHighScores()
-          that.draw()
-        }
-        break
-      case 192: // tilde key to toggle dev mode
-        that.devModeOn = !that.devModeOn
-        that.draw()
-        break
-      default:
-        console.log('unrecognized key: ' + e.keyCode)
+  window.addEventListener('focus', function () {
+    if (!pausedBeforeBlur && that.gameOver === false) {
+      that.resumeGame()
     }
+  })
+
+  document.addEventListener('keydown', function (e) {
+    if (!that.isGameplayTarget(e.target)) return
+    if (that.handleKeyEvent(e)) {
+      e.preventDefault()
+    }
+  })
+}
+
+Game.prototype.isGameplayTarget = function (target) {
+  if (!target) return true
+  if (target === this.canvas) return true
+  if (target === document.body || target === document.documentElement) return true
+  return false
+}
+
+Game.prototype.pauseGame = function () {
+  clearInterval(this.loop)
+  this.paused = true
+  this.draw()
+}
+
+Game.prototype.resumeGame = function () {
+  if (this.gameOver === false) {
+    this.tetDownLoop()
+    this.paused = false
+    this.draw()
+  }
+}
+
+Game.prototype.handleKeyEvent = function (e) {
+  const action = this.getKeyboardAction(e)
+  if (action === null) return false
+  return this.performKeyboardAction(action)
+}
+
+Game.prototype.getKeyboardAction = function (e) {
+  const key = typeof e.key === 'string' ? e.key : ''
+  const code = typeof e.code === 'string' ? e.code : ''
+  const normalizedKey = key.length === 1 ? key.toLowerCase() : key
+  const normalizedCode = code.toLowerCase()
+
+  if (key === ' ' || key === 'Spacebar' || code === 'Space') return { name: 'drop' }
+  if (normalizedKey === 'arrowup' || normalizedCode === 'arrowup') return { name: 'rotate' }
+  if (normalizedKey === 'arrowleft' || normalizedCode === 'arrowleft') return { name: 'left' }
+  if (normalizedKey === 'arrowright' || normalizedCode === 'arrowright') return { name: 'right' }
+  if (normalizedKey === 'arrowdown' || normalizedCode === 'arrowdown') return { name: 'down' }
+  if (normalizedKey === 'p' || normalizedKey === 's' || normalizedCode === 'keyp' || normalizedCode === 'keys') {
+    return { name: 'pause' }
+  }
+  if (normalizedKey === 'r' || normalizedCode === 'keyr') return { name: 'reset' }
+  if (code === 'Backquote' || key === '`' || key === '~') return { name: 'toggleDevMode' }
+  if (normalizedKey === 'end' || normalizedCode === 'end') return { name: 'devUp' }
+  if (normalizedKey === 'g' || normalizedCode === 'keyg') return { name: 'devGameOver' }
+  if (normalizedKey === 'h' || normalizedCode === 'keyh') return { name: 'devResetScores' }
+  if (/^[0-9]$/.test(normalizedKey)) return { name: 'devFixture', fixture: Number(normalizedKey) }
+  if (/^Digit[0-9]$/.test(code)) return { name: 'devFixture', fixture: Number(code.slice(-1)) }
+  return null
+}
+
+Game.prototype.performKeyboardAction = function (action) {
+  switch (action.name) {
+    case 'drop':
+      if (this.canTetMove() === true) {
+        while (!this.newTet) {
+          this.currentTet.moveDown()
+        }
+        this.draw()
+        this.tetDownLoop()
+        return true
+      }
+      return false
+    case 'rotate':
+      if (this.canTetMove() === true) {
+        this.currentTet.rotate()
+        this.draw()
+        return true
+      }
+      return false
+    case 'left':
+      if (this.canTetMove() === true) {
+        this.currentTet.moveLeft()
+        this.draw()
+        return true
+      }
+      return false
+    case 'right':
+      if (this.canTetMove() === true) {
+        this.currentTet.moveRight()
+        this.draw()
+        return true
+      }
+      return false
+    case 'down':
+      if (this.canTetMove() === true) {
+        let skip = false
+        if (this.newTet) skip = true
+        if (!skip) clearInterval(this.loop)
+        this.currentTet.moveDown()
+        this.draw()
+        if (!skip && !this.paused) this.tetDownLoop()
+        return true
+      }
+      return false
+    case 'pause':
+      if (this.gameOver === false) {
+        if (!this.paused) {
+          this.pauseGame()
+        } else {
+          if (this.gameOver === false) {
+            this.tetDownLoop()
+            this.dropOnce = false
+          }
+          this.paused = false
+          this.draw()
+        }
+        return true
+      }
+      return false
+    case 'reset':
+      this.allTets = []
+      clearInterval(this.loop)
+      this.currentTet = null
+      this.gameOver = false
+      this.newTet = true
+      this.nextTet = null
+      this.paused = true
+      this.score = 0
+      this.updateScore = true
+      this.createTet()
+      return true
+    case 'devUp':
+      if (this.devModeOn) {
+        if (this.currentTet.topLeft.row > 0) {
+          this.currentTet.topLeft.row--
+        }
+        this.draw()
+        return true
+      }
+      return false
+    case 'devFixture':
+      if (this.devModeOn) {
+        this.allTets = []
+        this.gameOver = false
+        this.score = 0
+        this.updateScore = true
+        this.testCase(action.fixture)
+        this.createTet()
+        this.tetDownLoop()
+        return true
+      }
+      return false
+    case 'devGameOver':
+      if (this.devModeOn) {
+        this.gameOver = true
+        clearInterval(this.loop)
+        // this.score = 1939999955999999 // near max
+        this.score = Math.random() * 100000
+        this.updateScore = true
+        this.draw()
+        return true
+      }
+      return false
+    case 'devResetScores':
+      if (this.devModeOn) {
+        this.setHighScores([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        this.displayHighScores()
+        this.draw()
+        return true
+      }
+      return false
+    case 'toggleDevMode':
+      this.devModeOn = !this.devModeOn
+      this.draw()
+      return true
+    default:
+      return false
   }
 }
 
