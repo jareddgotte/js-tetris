@@ -436,6 +436,22 @@ test('constructor-enabled developer mode still permits gated fixtures', () => {
   assert.deepEqual(fixtureCalls, [7])
 })
 
+test('numpad digits do not trigger developer fixtures', () => {
+  const engine = loadEngine()
+  const game = engine.createGame(true)
+  const fixtureCalls = []
+  game.testCase = function (fixture) {
+    fixtureCalls.push(fixture)
+  }
+  game.createTet = function () {}
+  game.tetDownLoop = function () {}
+
+  const numpad = engine.dispatchKey({ key: '5', code: 'Numpad5' })
+
+  assert.equal(numpad.defaultPrevented, false)
+  assert.deepEqual(fixtureCalls, [])
+})
+
 test('keyboard actions are mapped by name and prevent default only when handled', () => {
   const engine = loadEngine()
   const { game, tet } = activeTetGame(engine)
@@ -443,6 +459,10 @@ test('keyboard actions are mapped by name and prevent default only when handled'
   const left = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft' })
   assert.equal(left.defaultPrevented, true)
   assert.equal(tet.topLeft.col, 3)
+
+  const keyOnlyRotate = engine.dispatchKey({ key: 'ArrowUp' })
+  assert.equal(keyOnlyRotate.defaultPrevented, true)
+  assert.equal(tet.rotation, 1)
 
   game.paused = true
   const blocked = engine.dispatchKey({ key: 'ArrowRight', code: 'ArrowRight' })
@@ -460,6 +480,10 @@ test('keyboard actions are mapped by name and prevent default only when handled'
 
   const ignored = engine.dispatchKey({ key: 'q', code: 'KeyQ' })
   assert.equal(ignored.defaultPrevented, false)
+
+  const modifierBlocked = engine.dispatchKey({ key: 'r', code: 'KeyR', ctrlKey: true })
+  assert.equal(modifierBlocked.defaultPrevented, false)
+  assert.equal(game.paused, false)
 })
 
 test('keyboard input ignores editable and unrelated targets', () => {

@@ -147,6 +147,7 @@ Game.prototype.handleEvents = function () {
 
   document.addEventListener('keydown', function (e) {
     if (!that.isGameplayTarget(e.target)) return
+    if (e.ctrlKey || e.metaKey || e.altKey) return
     if (that.handleKeyEvent(e)) {
       e.preventDefault()
     }
@@ -183,7 +184,7 @@ Game.prototype.handleKeyEvent = function (e) {
 Game.prototype.getKeyboardAction = function (e) {
   const key = typeof e.key === 'string' ? e.key : ''
   const code = typeof e.code === 'string' ? e.code : ''
-  const normalizedKey = key.length === 1 ? key.toLowerCase() : key
+  const normalizedKey = key.toLowerCase()
   const normalizedCode = code.toLowerCase()
 
   if (key === ' ' || key === 'Spacebar' || code === 'Space') return { name: 'drop' }
@@ -199,8 +200,10 @@ Game.prototype.getKeyboardAction = function (e) {
   if (normalizedKey === 'end' || normalizedCode === 'end') return { name: 'devUp' }
   if (normalizedKey === 'g' || normalizedCode === 'keyg') return { name: 'devGameOver' }
   if (normalizedKey === 'h' || normalizedCode === 'keyh') return { name: 'devResetScores' }
-  if (/^[0-9]$/.test(normalizedKey)) return { name: 'devFixture', fixture: Number(normalizedKey) }
-  if (/^Digit[0-9]$/.test(code)) return { name: 'devFixture', fixture: Number(code.slice(-1)) }
+  if (/^[0-9]$/.test(normalizedKey) && !normalizedCode.startsWith('numpad')) {
+    return { name: 'devFixture', fixture: Number(normalizedKey) }
+  }
+  if (/^digit[0-9]$/.test(normalizedCode)) return { name: 'devFixture', fixture: Number(code.slice(-1)) }
   return null
 }
 
