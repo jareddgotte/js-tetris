@@ -19,6 +19,8 @@ The board is not stored as a canonical cell matrix. `Game.allTets` is authoritat
 
 Row clears can split Tets into fragments rather than deleting entire pieces; preserve the `alterShape`/`alterShapes` and `cleanShape` flow. Only one `Game` instance is intended per page.
 
+The row-clear cascade runs on its own owned timer, `Game.cascadeLoop` (set in `Tet.prototype.collided`), separate from the gravity loop `Game.loop`. It must stay guarded by `game.paused` so pause and blur freeze it in place, and it must be cleared alongside `this.loop` on every reset, game-over, and dev-fixture path — an orphaned cascade timer can mutate `allTets` after a session has ended. See `test/engine.test.js` for the deterministic coverage of these paths.
+
 Changed behavior requires deterministic coverage in `test/engine.test.js`, with browser checks added where relevant. Correct affected stale documentation in the same change. Maintain user-facing, workflow-facing, and agent-facing Markdown in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`. Do not check in generated JSDoc under `docs/` unless a concrete consumer and a reproducible pinned generation command both exist.
 
 ## Automated review workflows
