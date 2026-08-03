@@ -48,8 +48,18 @@ function loadEngine (randomValues = [], options = {}) {
 
   function createNode (tagName, initial = {}) {
     const node = createEventTarget()
+    let textContent = initial.textContent || ''
     node.tagName = tagName
-    node.textContent = initial.textContent || ''
+    node.textHistory = [textContent]
+    Object.defineProperty(node, 'textContent', {
+      get () {
+        return textContent
+      },
+      set (value) {
+        textContent = String(value)
+        node.textHistory.push(textContent)
+      }
+    })
     node.innerHTML = initial.innerHTML || ''
     node.hidden = Boolean(initial.hidden)
     node.attributes = Object.assign({}, initial.attributes)
@@ -563,6 +573,7 @@ test('visible controls update status text while the live region stays eventful',
   game.draw()
   assert.equal(live.textContent, 'Paused. Score 0.')
 
+  live.textHistory.length = 0
   startPause.dispatchEvent({ type: 'click' })
   assert.equal(game.paused, false)
   assert.equal(state.textContent, 'Running')
@@ -579,6 +590,11 @@ test('visible controls update status text while the live region stays eventful',
   assert.equal(score.textContent, '0')
   assert.equal(state.textContent, 'Paused')
   assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
+  assert.deepEqual(live.textHistory.slice(-2), ['', 'Game restarted. Score 0.'])
+
+  restart.dispatchEvent({ type: 'click' })
+  assert.equal(game.paused, true)
+  assert.deepEqual(live.textHistory.slice(-2), ['', 'Game restarted. Score 0.'])
 })
 
 test('keyboard input ignores editable and unrelated targets', () => {

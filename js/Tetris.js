@@ -192,7 +192,7 @@ Game.prototype.bindAccessibleUi = function () {
   this.updateAccessibleUi(true)
 }
 
-Game.prototype.updateAccessibleUi = function (announce) {
+Game.prototype.updateAccessibleUi = function (announce, mode) {
   const accessibility = this.accessibility
   const score = String(commaSeparateNumber(this.score))
   const state = this.gameOver ? 'Game over' : (this.paused ? 'Paused' : 'Running')
@@ -201,14 +201,17 @@ Game.prototype.updateAccessibleUi = function (announce) {
     : this.paused
       ? 'Press Start/Pause Game to begin or resume.'
       : 'Game running.'
-  const announcement = this.gameOver
-    ? 'Game over. Final score ' + score + '.'
-    : state + '. Score ' + score + '.'
+  const announcement = mode === 'restart'
+    ? 'Game restarted. Score ' + score + '.'
+    : this.gameOver
+      ? 'Game over. Final score ' + score + '.'
+      : state + '. Score ' + score + '.'
 
   if (accessibility.state) accessibility.state.textContent = state
   if (accessibility.score) accessibility.score.textContent = score
   if (accessibility.message) accessibility.message.textContent = message
   if (accessibility.live && (announce || announcement !== this.lastAccessibilityAnnouncement)) {
+    if (mode === 'restart') accessibility.live.textContent = ''
     accessibility.live.textContent = announcement
     this.lastAccessibilityAnnouncement = announcement
   }
@@ -339,6 +342,7 @@ Game.prototype.performKeyboardAction = function (action) {
       this.score = 0
       this.updateScore = true
       this.createTet()
+      this.updateAccessibleUi(true, 'restart')
       return true
     case 'devUp':
       if (this.devModeOn) {
