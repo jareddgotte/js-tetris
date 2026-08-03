@@ -711,6 +711,53 @@ function drainCascade (engine, cascadeId, limit = 20) {
   }
 }
 
+function buildLineClearBand (engine, game, rowOffset) {
+  const vertical = new engine.Tet(game, 0)
+  vertical.rotate()
+  vertical.topLeft = { row: rowOffset, col: 0 }
+
+  const leftFill = new engine.Tet(game, 0)
+  leftFill.topLeft = { row: rowOffset + 3, col: 1 }
+  const rightFill = new engine.Tet(game, 0)
+  rightFill.topLeft = { row: rowOffset + 3, col: 5 }
+  const finalFill = new engine.Tet(game, -1)
+  finalFill.type = 0
+  finalFill.topLeft = { row: rowOffset + 3, col: 9 }
+  finalFill.setShape([[1]])
+
+  return { vertical, leftFill, rightFill, finalFill }
+}
+
+// Builds two spatially-separated, independently-triggered row-clear cascades:
+// band A (rows 0-3) clears first and starts ticking, then band B (rows 11-14,
+// resting on the board floor so it cannot be disturbed by A's cascade) lands
+// and clears a second row while A's cascade is still in flight. This matches
+// the reviewed regression: a second cascade starting while an earlier one has
+// not yet settled must not corrupt either timer's bookkeeping.
+function buildOverlappingCascadesFixture (engine) {
+  const game = emptyGame(engine)
+  game.paused = false
+
+  const bandA = buildLineClearBand(engine, game, 0)
+  const bandB = buildLineClearBand(engine, game, 12)
+
+  game.allTets = [
+    bandA.vertical, bandA.leftFill, bandA.rightFill, bandA.finalFill,
+    bandB.vertical, bandB.leftFill, bandB.rightFill
+  ]
+  game.updateLanded = true
+
+  bandA.vertical.collided()
+  const cascadeIdA = engine.intervalIds()[0]
+
+  game.allTets.push(bandB.finalFill)
+  game.updateLanded = true
+  bandB.finalFill.collided()
+  const cascadeIdB = engine.intervalIds().find((id) => id !== cascadeIdA)
+
+  return { game, bandA, bandB, cascadeIdA, cascadeIdB }
+}
+
 test('direct pause freezes the row-clear cascade even while gravity is also active, and resume replays the remaining cascade without loss or duplication', () => {
   const engine = loadEngine()
   const { game, vertical, active, gravityId, cascadeId } = buildGravityAndCascadeFixture(engine)
@@ -799,6 +846,42 @@ test('resetting mid-paused-cascade clears the orphaned cascade timer and protect
   game.performKeyboardAction({ name: 'pause' })
   assert.equal(game.paused, false)
   assert.deepEqual(game.allTets, newAllTets, 'resuming after reset must not replay the discarded cascade')
+})
+
+test('overlapping row-clear cascades each own and clear only their own timer', () => {
+  const engine = loadEngine()
+  const { cascadeIdA, cascadeIdB } = buildOverlappingCascadesFixture(engine)
+
+  assert.notEqual(cascadeIdA, cascadeIdB)
+  assert.equal(engine.pendingIntervals(), 2)
+
+  drainCascade(engine, cascadeIdA)
+  assert.equal(
+    engine.intervalIds().includes(cascadeIdB),
+    true,
+    "cascade A settling must not clear cascade B's still-scheduled timer"
+  )
+
+  drainCascade(engine, cascadeIdB)
+  assert.equal(engine.pendingIntervals(), 0)
+})
+
+test('resetting while two row-clear cascades are in flight clears every outstanding cascade timer', () => {
+  const engine = loadEngine()
+  const { game, cascadeIdA, cascadeIdB } = buildOverlappingCascadesFixture(engine)
+
+  assert.equal(engine.pendingIntervals(), 2)
+
+  game.performKeyboardAction({ name: 'reset' })
+
+  assert.equal(engine.intervalIds().includes(cascadeIdA), false, 'reset must clear cascade A')
+  assert.equal(engine.intervalIds().includes(cascadeIdB), false, 'reset must clear cascade B, not just whichever id was tracked last')
+  assert.equal(engine.pendingIntervals(), 0)
+
+  const newAllTets = game.allTets.slice()
+  engine.runInterval(cascadeIdA)
+  engine.runInterval(cascadeIdB)
+  assert.deepEqual(game.allTets, newAllTets, 'cleared cascade timers must never mutate the new session\'s allTets')
 })
 
 test('a blocked spawn mid-cascade clears the cascade timer along with the gravity loop', () => {
