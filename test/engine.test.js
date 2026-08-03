@@ -775,6 +775,76 @@ test('blur-triggered pause freezes the row-clear cascade the same way, and focus
   assert.equal(game.allTets.length, 3)
 })
 
+test('resetting mid-paused-cascade clears the orphaned cascade timer and protects the new session', () => {
+  const engine = loadEngine()
+  const { game, vertical, cascadeId } = buildGravityAndCascadeFixture(engine)
+
+  engine.runInterval(cascadeId)
+  assert.equal(vertical.topLeft.row, 13)
+
+  game.pauseGame()
+  assert.equal(game.paused, true)
+  assert.equal(engine.intervalIds().includes(cascadeId), true, 'cascade timer keeps ticking silently while paused')
+
+  game.performKeyboardAction({ name: 'reset' })
+  assert.equal(engine.intervalIds().includes(cascadeId), false, 'reset must clear the orphaned cascade timer')
+  assert.equal(engine.pendingIntervals(), 0)
+
+  const newAllTets = game.allTets.slice()
+  assert.equal(newAllTets.length, 1)
+
+  engine.runInterval(cascadeId)
+  assert.deepEqual(game.allTets, newAllTets, 'a cleared cascade timer must never mutate the new session\'s allTets')
+
+  game.performKeyboardAction({ name: 'pause' })
+  assert.equal(game.paused, false)
+  assert.deepEqual(game.allTets, newAllTets, 'resuming after reset must not replay the discarded cascade')
+})
+
+test('a blocked spawn mid-cascade clears the cascade timer along with the gravity loop', () => {
+  const engine = loadEngine()
+  const game = emptyGame(engine)
+
+  const vertical = new engine.Tet(game, 0)
+  vertical.rotate()
+  vertical.topLeft = { row: 12, col: 0 }
+
+  const leftFill = new engine.Tet(game, 0)
+  leftFill.topLeft = { row: 14, col: 1 }
+  const rightFill = new engine.Tet(game, 0)
+  rightFill.topLeft = { row: 14, col: 5 }
+  const finalFill = new engine.Tet(game, -1)
+  finalFill.type = 0
+  finalFill.topLeft = { row: 14, col: 9 }
+  finalFill.setShape([[1]])
+
+  const blocker = new engine.Tet(game, -1)
+  blocker.type = 0
+  blocker.topLeft = { row: 0, col: 4 }
+  blocker.setShape([[1]])
+
+  game.allTets = [vertical, leftFill, rightFill, finalFill, blocker]
+  game.currentTet = null
+  game.newTet = true
+  game.updateLanded = true
+  game.paused = false
+
+  vertical.collided()
+  assert.equal(engine.pendingIntervals(), 1)
+  const cascadeId = engine.intervalIds()[0]
+
+  game.nextTet = new engine.Tet(game, 3)
+  game.createTet()
+
+  assert.equal(game.gameOver, true)
+  assert.equal(engine.intervalIds().includes(cascadeId), false, 'a game-ending spawn must clear the in-flight cascade timer')
+  assert.equal(engine.pendingIntervals(), 0)
+
+  const allTetsAfterGameOver = game.allTets.slice()
+  engine.runInterval(cascadeId)
+  assert.deepEqual(game.allTets, allTetsAfterGameOver, 'the cleared cascade timer must not resurrect and mutate allTets after game over')
+})
+
 test('high-score cookies are normalized and repaired across invalid shapes', () => {
   const cases = [
     {
