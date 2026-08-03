@@ -336,6 +336,7 @@ Game.prototype.performKeyboardAction = function (action) {
     case 'reset':
       this.allTets = []
       clearInterval(this.loop)
+      clearInterval(this.cascadeLoop)
       this.currentTet = null
       this.gameOver = false
       this.newTet = true
@@ -363,6 +364,7 @@ Game.prototype.performKeyboardAction = function (action) {
     case 'devFixture':
       if (this.devModeOn) {
         this.allTets = []
+        clearInterval(this.cascadeLoop)
         this.gameOver = false
         this.score = 0
         this.updateScore = true
@@ -376,6 +378,7 @@ Game.prototype.performKeyboardAction = function (action) {
       if (this.devModeOn) {
         this.gameOver = true
         clearInterval(this.loop)
+        clearInterval(this.cascadeLoop)
         // this.score = 1939999955999999 // near max
         this.score = Math.random() * 100000
         this.updateScore = true
@@ -658,6 +661,7 @@ Game.prototype.createTet = function () {
     this.gameOver = true
     this.newTet = true
     clearInterval(this.loop)
+    clearInterval(this.cascadeLoop)
     this.updateAccessibleUi(true)
     return
   } else this.allTets.push(this.currentTet)
@@ -1330,7 +1334,7 @@ Tet.prototype.collided = function () {
   const that = this
   let movingTets = [0]
   let tetsMoved
-  const moveLoop = setInterval(function () {
+  that.game.cascadeLoop = setInterval(function () {
     if (that.game.paused) return // freeze cascade motion while paused or backgrounded; resumes on the next unpaused tick
     movingTets = []
     tetsMoved = true
@@ -1356,7 +1360,7 @@ Tet.prototype.collided = function () {
     }
     that.game.draw()
     if (movingTets.length === 0) {
-      clearInterval(moveLoop)
+      clearInterval(that.game.cascadeLoop)
       that.collided()
     }
   }, 200)
