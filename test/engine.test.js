@@ -9,6 +9,8 @@ const vm = require('node:vm')
 const root = path.resolve(__dirname, '..')
 const engineSource = fs.readFileSync(path.join(root, 'js/Tetris.js'), 'utf8')
 const fixturesSource = fs.readFileSync(path.join(root, 'js/TestCase.js'), 'utf8')
+const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
+const stylesSource = fs.readFileSync(path.join(root, 'css/main.css'), 'utf8')
 
 function loadEngine (randomValues = [], options = {}) {
   const intervals = new Map()
@@ -44,6 +46,29 @@ function loadEngine (randomValues = [], options = {}) {
     }
   }
 
+  function createNode (tagName, initial = {}) {
+    const node = createEventTarget()
+    node.tagName = tagName
+    node.textContent = initial.textContent || ''
+    node.innerHTML = initial.innerHTML || ''
+    node.hidden = Boolean(initial.hidden)
+    node.attributes = Object.assign({}, initial.attributes)
+    node.setAttribute = function (name, value) {
+      node.attributes[name] = String(value)
+    }
+    node.getAttribute = function (name) {
+      return Object.prototype.hasOwnProperty.call(node.attributes, name) ? node.attributes[name] : null
+    }
+    node.hasAttribute = function (name) {
+      return Object.prototype.hasOwnProperty.call(node.attributes, name)
+    }
+    node.focus = function () {
+      document.activeElement = node
+    }
+    return node
+  }
+
+  const canvasTextNode = createNode('CANVAS')
   const canvasContext = {
     beginPath () {},
     clearRect () {},
@@ -58,21 +83,40 @@ function loadEngine (randomValues = [], options = {}) {
     stroke () {},
     strokeText () {}
   }
-  const canvas = createEventTarget()
-  canvas.tagName = 'CANVAS'
+  const canvas = canvasTextNode
   canvas.getContext = function () {
     return canvasContext
   }
-  canvas.focus = function () {}
 
-  const highScores = { innerHTML: '' }
+  const nodes = {
+    canvas,
+    'game-fallback': createNode('P', { textContent: 'If the canvas cannot render, use the buttons and keyboard shortcuts above.' }),
+    'game-instructions': createNode('P', { textContent: 'Use the Start/Pause Game button or P/S to begin, arrows and Space to play, and R to restart.' }),
+    'game-live-status': createNode('P', { textContent: '' }),
+    'game-restart': createNode('BUTTON', { textContent: 'Restart Game' }),
+    'game-start-pause': createNode('BUTTON', { textContent: 'Start/Pause Game' }),
+    'game-status': createNode('SECTION'),
+    'game-status-message': createNode('P', { textContent: 'Press Start/Pause Game to begin.' }),
+    'game-status-score': createNode('SPAN', { textContent: '0' }),
+    'game-status-state': createNode('SPAN', { textContent: 'Paused' }),
+    'game-status-title': createNode('H3', { textContent: 'Status' }),
+    'gameplay-title': createNode('H2', { textContent: 'Play' }),
+    'high-scores': createNode('SECTION'),
+    'high-scores-list': createNode('OL'),
+    'high-scores-title': createNode('H2', { textContent: 'High Scores' }),
+    'public-controls': createNode('SECTION'),
+    'public-controls-title': createNode('H2', { textContent: 'Controls' })
+  }
+
   const document = createEventTarget()
-  document.body = { tagName: 'BODY' }
-  document.documentElement = { tagName: 'HTML' }
+  document.body = createNode('BODY')
+  document.documentElement = createNode('HTML')
+  document.activeElement = document.body
   document.getElementById = function (id) {
-    if (id === 'game') return canvas
-    if (id === 'high-scores') return highScores
-    return null
+    return nodes[id] || null
+  }
+  document.createElement = function (tagName) {
+    return createNode(String(tagName || 'div').toUpperCase())
   }
   Object.defineProperty(document, 'cookie', {
     get () {
@@ -167,7 +211,7 @@ function loadEngine (randomValues = [], options = {}) {
       return cookieWrites
     },
     createGame (devMode = false) {
-      return new context.Game('game', 'high-scores', devMode)
+      return new context.Game('canvas', 'high-scores-list', devMode)
     },
     dispatchKey (input, overrides = {}) {
       return dispatchEvent(document, 'keydown', Object.assign({ target: document.body }, translateKeyInput(input), overrides))
@@ -486,11 +530,63 @@ test('keyboard actions are mapped by name and prevent default only when handled'
   assert.equal(game.paused, false)
 })
 
+test('index.html and main.css expose baseline accessible semantics and reflow hooks', () => {
+  assert.match(indexSource, /<meta name="viewport" content="width=device-width, initial-scale=1">/)
+  assert.match(indexSource, /id="game-start-pause"/)
+  assert.match(indexSource, /id="game-restart"/)
+  assert.match(indexSource, /aria-labelledby="gameplay-title game-instructions game-status-title"/)
+  assert.match(indexSource, /id="game-live-status" class="sr-only" aria-live="polite" aria-atomic="true"/)
+  assert.equal(indexSource.includes('<br>'), false)
+  assert.match(stylesSource, /button:focus-visible/)
+  assert.match(stylesSource, /#canvas:focus-visible/)
+  assert.match(stylesSource, /@media \(max-width: 48rem\)/)
+  assert.match(stylesSource, /flex-wrap: wrap/)
+  assert.match(stylesSource, /grid-template-columns: minmax\(0, 1fr\) auto/)
+})
+
+test('visible controls update status text while the live region stays eventful', () => {
+  const engine = loadEngine()
+  const game = engine.createGame()
+  const startPause = engine.document.getElementById('game-start-pause')
+  const restart = engine.document.getElementById('game-restart')
+  const state = engine.document.getElementById('game-status-state')
+  const score = engine.document.getElementById('game-status-score')
+  const message = engine.document.getElementById('game-status-message')
+  const live = engine.document.getElementById('game-live-status')
+
+  assert.equal(engine.canvas.tabIndex, 0)
+  assert.equal(state.textContent, 'Paused')
+  assert.equal(score.textContent, '0')
+  assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
+  assert.equal(live.textContent, 'Paused. Score 0.')
+
+  game.draw()
+  assert.equal(live.textContent, 'Paused. Score 0.')
+
+  startPause.dispatchEvent({ type: 'click' })
+  assert.equal(game.paused, false)
+  assert.equal(state.textContent, 'Running')
+  assert.equal(message.textContent, 'Game running.')
+  assert.match(live.textContent, /^Running\. Score 0\.$/)
+
+  game.score = 1200
+  game.draw()
+  assert.equal(score.textContent, '1,200')
+  assert.match(live.textContent, /^Running\. Score 1,200\.$/)
+
+  restart.dispatchEvent({ type: 'click' })
+  assert.equal(game.paused, true)
+  assert.equal(score.textContent, '0')
+  assert.equal(state.textContent, 'Paused')
+  assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
+})
+
 test('keyboard input ignores editable and unrelated targets', () => {
   const engine = loadEngine()
   const { tet } = activeTetGame(engine)
   const input = { tagName: 'INPUT' }
   const link = { tagName: 'A' }
+  const button = engine.document.getElementById('game-start-pause')
 
   const editable = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: input })
   assert.equal(editable.defaultPrevented, false)
@@ -498,6 +594,10 @@ test('keyboard input ignores editable and unrelated targets', () => {
 
   const unrelated = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: link })
   assert.equal(unrelated.defaultPrevented, false)
+  assert.equal(tet.topLeft.col, 4)
+
+  const buttonTarget = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: button })
+  assert.equal(buttonTarget.defaultPrevented, false)
   assert.equal(tet.topLeft.col, 4)
 })
 
