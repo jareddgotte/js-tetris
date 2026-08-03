@@ -49,7 +49,9 @@ git diff --check
 
 - Start with an issue and keep each change focused on it. Discuss substantial modernization before coding.
 - Add or update deterministic tests for changed behavior. Manual browser checks can supplement, but not replace, behavioral regression tests.
-- Correct documentation made stale by the change in the same pull request. Do not hand-edit generated JSDoc under `docs/`.
+- Correct documentation made stale by the change in the same pull request.
+- Maintain user-facing, workflow-facing, and agent-facing Markdown in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`.
+- Do not check in generated JSDoc under `docs/` unless a concrete consumer and a reproducible pinned generation command both exist.
 - Complete the pull-request template, including validation, relevant visual or accessibility evidence, risks, and explicit non-goals.
 
 See `README.md` for user-facing project information and `AGENTS.md` for engine architecture and agent guidance.
