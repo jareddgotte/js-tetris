@@ -590,25 +590,31 @@ test('visible controls update status text while the live region stays eventful',
   assert.equal(score.textContent, '1,200')
   assert.match(live.textContent, /^Running\. Score 1,200\.$/)
 
+  const runningRestartHistory = live.textHistory.length
   restart.dispatchEvent({ type: 'click' })
   assert.equal(game.paused, true)
   assert.equal(score.textContent, '0')
   assert.equal(state.textContent, 'Paused')
   assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
-  assert.deepEqual(live.textHistory.slice(-2), ['', 'Game restarted. Score 0.'])
+  assert.deepEqual(live.textHistory.slice(runningRestartHistory), ['', 'Game restarted. Score 0.'])
+  assert.equal(live.textHistory.slice(runningRestartHistory).includes('Paused. Score 0.'), false)
 
+  const pausedRestartHistory = live.textHistory.length
   restart.dispatchEvent({ type: 'click' })
   assert.equal(game.paused, true)
-  assert.deepEqual(live.textHistory.slice(-2), ['', 'Game restarted. Score 0.'])
+  assert.deepEqual(live.textHistory.slice(pausedRestartHistory), ['', 'Game restarted. Score 0.'])
+  assert.equal(live.textHistory.slice(pausedRestartHistory).includes('Paused. Score 0.'), false)
 
   game.gameOver = true
   game.draw()
   assert.equal(startPause.disabled, true)
   assert.equal(state.textContent, 'Game over')
   assert.equal(message.textContent, 'Game over. Use Restart Game to begin again.')
+  const gameOverRestartHistory = live.textHistory.length
   startPause.dispatchEvent({ type: 'click' })
   assert.equal(game.gameOver, true)
   assert.equal(game.paused, true)
+  assert.deepEqual(live.textHistory.slice(gameOverRestartHistory), [])
 })
 
 test('keyboard input ignores editable and unrelated targets', () => {

@@ -124,6 +124,7 @@ function Game (canvasId, highScoresListId, devMode) {
   this.lastAccessibilityAnnouncement = ''
   this.lastAccessibilityState = ''
   this.lastAccessibilityScore = null
+  this.suppressAccessibleAnnouncement = false
 
   // init functions
   this.displayHighScores()
@@ -211,7 +212,7 @@ Game.prototype.updateAccessibleUi = function (announce, mode) {
   if (accessibility.score) accessibility.score.textContent = score
   if (accessibility.message) accessibility.message.textContent = message
   if (accessibility.startPauseButton) accessibility.startPauseButton.disabled = Boolean(this.gameOver)
-  if (accessibility.live && (announce || announcement !== this.lastAccessibilityAnnouncement)) {
+  if (accessibility.live && !this.suppressAccessibleAnnouncement && (announce || announcement !== this.lastAccessibilityAnnouncement)) {
     if (mode === 'restart') accessibility.live.textContent = ''
     accessibility.live.textContent = announcement
     this.lastAccessibilityAnnouncement = announcement
@@ -342,7 +343,12 @@ Game.prototype.performKeyboardAction = function (action) {
       this.paused = true
       this.score = 0
       this.updateScore = true
-      this.createTet()
+      this.suppressAccessibleAnnouncement = true
+      try {
+        this.createTet()
+      } finally {
+        this.suppressAccessibleAnnouncement = false
+      }
       this.updateAccessibleUi(true, 'restart')
       return true
     case 'devUp':
