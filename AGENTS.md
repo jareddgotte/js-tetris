@@ -19,7 +19,7 @@ The board is not stored as a canonical cell matrix. `Game.allTets` is authoritat
 
 Row clears can split Tets into fragments rather than deleting entire pieces; preserve the `alterShape`/`alterShapes` and `cleanShape` flow. Only one `Game` instance is intended per page.
 
-Changed behavior requires deterministic coverage in `test/engine.test.js`, with browser checks added where relevant. Correct affected stale documentation in the same change. `docs/` is generated JSDoc output; do not hand-edit it.
+Changed behavior requires deterministic coverage in `test/engine.test.js`, with browser checks added where relevant. Correct affected stale documentation in the same change. Maintain user-facing, workflow-facing, and agent-facing Markdown in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`. Do not check in generated JSDoc under `docs/` unless a concrete consumer and a reproducible pinned generation command both exist.
 
 ## Automated review workflows
 
