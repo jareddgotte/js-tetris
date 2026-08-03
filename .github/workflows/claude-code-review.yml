@@ -38,18 +38,39 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          # --comment is required; without it the skill reports findings to the
-          # run log only and posts nothing to the pull request
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
+          # Deliberately does NOT use code-review@claude-code-plugins. That plugin
+          # spawns background agents and ends its turn to wait for them, which works
+          # interactively but not here: in the headless SDK, end_turn is completion,
+          # so the run terminates mid-review and posts nothing. See the PR that
+          # introduced this change for the captured evidence.
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Read AGENTS.md first and treat it as
+            binding: it documents this repository's architecture and invariants,
+            including that `Game.allTets` is authoritative while `Game.landed` is
+            a derived lookup, and that the browser runtime must stay dependency-free.
+
+            Prioritise correctness over style. Look for logic errors, broken
+            invariants, mishandled edge cases, and behaviour that contradicts a
+            function's name, documentation, or this PR's stated intent.
+
+            Before reporting an issue, verify it against the actual code rather
+            than assuming. Do not report speculative problems, and do not comment
+            on formatting handled by `npm run lint`.
+
+            Post each specific finding as an inline comment on the relevant line
+            using mcp__github_inline_comment__create_inline_comment, including a
+            committable suggestion where a concrete fix is clear. If there is
+            nothing worth raising, post no comments at all and say so in your
+            final message. Do not end your turn while work is still outstanding.
           # --allowedTools is exclusive: anything not listed is denied, and in CI a
           # denial is silent -- the job still reports success with no review posted.
-          # Skill is required for the /code-review prompt above to run at all.
           # create_inline_comment is the action's purpose-built posting tool; without
-          # it the skill hand-rolls `gh api ... -F line=N`, which is far more fragile.
+          # it the review hand-rolls `gh api ... -F line=N`, which is far more fragile.
           # Bash is scoped to the read-only inspection commands the review needs.
-          claude_args: '--allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"'
           # TEMPORARY: re-enabled to diagnose reviews that complete but post nothing.
           # Note that rerunning with ACTIONS_STEP_DEBUG does NOT substitute for this --
           # it adds GitHub step logging only and emits no model output. Revert once the
