@@ -1331,6 +1331,7 @@ Tet.prototype.collided = function () {
   let movingTets = [0]
   let tetsMoved
   const moveLoop = setInterval(function () {
+    if (that.game.paused) return // freeze cascade motion while paused or backgrounded; resumes on the next unpaused tick
     movingTets = []
     tetsMoved = true
     while (tetsMoved) {

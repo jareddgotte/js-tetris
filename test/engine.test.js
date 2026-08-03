@@ -238,6 +238,13 @@ function loadEngine (randomValues = [], options = {}) {
     pendingIntervals () {
       return intervals.size
     },
+    intervalIds () {
+      return Array.from(intervals.keys())
+    },
+    runInterval (id) {
+      const callback = intervals.get(id)
+      if (callback) callback()
+    },
     runIntervalsUntilIdle (limit = 100) {
       let runs = 0
       while (intervals.size > 0) {
@@ -392,6 +399,7 @@ test('a line clear scores, fragments a piece, and cascades unsupported cells', (
   game.currentTet = null
   game.newTet = true
   game.updateLanded = true
+  game.paused = false
 
   vertical.collided()
 
@@ -659,6 +667,112 @@ test('blur pauses an active game and focus resumes only after blur-triggered pau
   engine.dispatchWindowEvent('focus')
   assert.equal(game.paused, true)
   assert.equal(engine.pendingIntervals(), 0)
+})
+
+function buildGravityAndCascadeFixture (engine) {
+  const game = emptyGame(engine)
+
+  const vertical = new engine.Tet(game, 0)
+  vertical.rotate()
+  vertical.topLeft = { row: 12, col: 0 }
+
+  const leftFill = new engine.Tet(game, 0)
+  leftFill.topLeft = { row: 14, col: 1 }
+  const rightFill = new engine.Tet(game, 0)
+  rightFill.topLeft = { row: 14, col: 5 }
+  const finalFill = new engine.Tet(game, -1)
+  finalFill.type = 0
+  finalFill.topLeft = { row: 14, col: 9 }
+  finalFill.setShape([[1]])
+
+  const active = new engine.Tet(game, 3)
+  active.topLeft = { row: 0, col: 4 }
+
+  game.allTets = [vertical, leftFill, rightFill, finalFill, active]
+  game.currentTet = active
+  game.newTet = false
+  game.paused = false
+  game.gameOver = false
+
+  game.resumeGame()
+  const gravityId = game.loop
+
+  vertical.collided()
+  const cascadeId = engine.intervalIds().find((id) => id !== gravityId)
+
+  return { game, vertical, active, gravityId, cascadeId }
+}
+
+function drainCascade (engine, cascadeId, limit = 20) {
+  let runs = 0
+  while (engine.intervalIds().includes(cascadeId)) {
+    if (runs++ > limit) throw new Error('cascade did not settle')
+    engine.runInterval(cascadeId)
+  }
+}
+
+test('direct pause freezes the row-clear cascade even while gravity is also active, and resume replays the remaining cascade without loss or duplication', () => {
+  const engine = loadEngine()
+  const { game, vertical, active, gravityId, cascadeId } = buildGravityAndCascadeFixture(engine)
+
+  assert.equal(game.score, 10000)
+  assert.equal(game.allTets.length, 3)
+  assert.equal(engine.pendingIntervals(), 2)
+
+  // Ordinary active play: gravity and the cascade both mutate state on their own ticks.
+  engine.runInterval(gravityId)
+  assert.equal(active.topLeft.row, 1)
+  engine.runInterval(cascadeId)
+  assert.equal(vertical.topLeft.row, 13)
+
+  game.pauseGame()
+  assert.equal(game.paused, true)
+  assert.equal(engine.pendingIntervals(), 1) // gravity cleared; cascade timer is still scheduled
+
+  engine.runInterval(cascadeId)
+  engine.runInterval(cascadeId)
+  assert.equal(vertical.topLeft.row, 13, 'cascade must not mutate allTets while paused')
+  assert.equal(active.topLeft.row, 1, 'gravity must not mutate allTets while paused')
+  assert.equal(engine.pendingIntervals(), 1)
+
+  game.performKeyboardAction({ name: 'pause' })
+  assert.equal(game.paused, false)
+  assert.equal(engine.pendingIntervals(), 2)
+
+  drainCascade(engine, cascadeId)
+
+  assert.equal(vertical.topLeft.row, 13, 'resumed cascade must not duplicate the already-taken step')
+  assert.deepEqual(JSON.parse(JSON.stringify(vertical.shape)), [[1], [1]])
+  assert.equal(game.allTets.length, 3)
+})
+
+test('blur-triggered pause freezes the row-clear cascade the same way, and focus resumes it without loss or duplication', () => {
+  const engine = loadEngine()
+  const { game, vertical, active, gravityId, cascadeId } = buildGravityAndCascadeFixture(engine)
+
+  engine.runInterval(gravityId)
+  assert.equal(active.topLeft.row, 1)
+  engine.runInterval(cascadeId)
+  assert.equal(vertical.topLeft.row, 13)
+
+  engine.dispatchWindowEvent('blur')
+  assert.equal(game.paused, true)
+  assert.equal(engine.pendingIntervals(), 1) // gravity cleared by blur; cascade timer survives
+
+  engine.runInterval(cascadeId)
+  engine.runInterval(cascadeId)
+  assert.equal(vertical.topLeft.row, 13, 'cascade must not mutate allTets while blurred')
+  assert.equal(active.topLeft.row, 1, 'gravity must not mutate allTets while blurred')
+
+  engine.dispatchWindowEvent('focus')
+  assert.equal(game.paused, false)
+  assert.equal(engine.pendingIntervals(), 2)
+
+  drainCascade(engine, cascadeId)
+
+  assert.equal(vertical.topLeft.row, 13, 'resumed cascade must not duplicate the already-taken step')
+  assert.deepEqual(JSON.parse(JSON.stringify(vertical.shape)), [[1], [1]])
+  assert.equal(game.allTets.length, 3)
 })
 
 test('high-score cookies are normalized and repaired across invalid shapes', () => {
