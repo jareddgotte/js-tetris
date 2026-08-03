@@ -21,6 +21,12 @@ Row clears can split Tets into fragments rather than deleting entire pieces; pre
 
 Changed behavior requires deterministic coverage in `test/engine.test.js`, with browser checks added where relevant. Correct affected stale documentation in the same change. `docs/` is generated JSDoc output; do not hand-edit it.
 
+## Automated review workflows
+
+`.github/workflows/claude-code-review.yml` reviews pull requests; `claude.yml` responds to `@claude` mentions. Both fail silently: a misconfiguration produces a green check and no output, never a red one. Never treat a passing check as evidence that a review ran — confirm a comment was actually posted. The workflow files carry inline comments explaining each non-obvious setting; read them before changing either file, and keep them accurate.
+
+`claude-code-review.yml` triggers on `pull_request`, so it runs from the pull request's own copy of the file, and the action refuses to run when that copy differs from the default branch. Changes to it are therefore unreviewable by the bot and cannot be tested before merging, and a long-lived branch needs the default branch merged in before its review will run at all. `claude.yml` is triggered by comment, review, and issue events instead, so this does not apply to it in the same way.
+
 ## Maintaining this file
 
 Keep this file for knowledge useful to almost every future agent session in this project.
