@@ -790,7 +790,7 @@ Game.prototype.checkHighScore = function () {
  *     _perimeter = [[0,0],[0,1],[4,1],[4,0]] is horizontal I Tet perimeter
  *     where [[0,0],[0,4],[1,4],[1,0]] is vertical I Tet. Imagine Tetriminos
  *     being expressed as 4 "blocks," each block's side would be _s pixels in
- *     magnitude, where _s is the variable blockS defined in index.php.
+ *     magnitude, where _s is the variable blockS defined in index.html.
  *     Therefore, we can determine its perimeter by taking the
  *     "(x, y) coordinates" in each "row" of _perimeter, and multiplying each x
  *     and y value by _s.
