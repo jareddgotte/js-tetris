@@ -63,7 +63,32 @@ jobs:
                while `Game.landed` is a derived lookup, and that the browser
                runtime must stay dependency-free.
 
-            2. Dispatch exactly two synchronous general-purpose review agents in
+            2. Handle your own earlier review threads before reviewing again.
+               This workflow re-runs on every push, so a pull request usually
+               already carries threads you opened. List them with:
+
+                 gh api graphql -f query='{repository(owner:"OWNER",name:"REPO")
+                 {pullRequest(number:N){reviewThreads(first:50){nodes{id isResolved
+                 isOutdated path line comments(first:20){nodes{author{login} body}}}}}}}'
+
+               For each unresolved thread you opened:
+               - If the current code addresses the finding, reply briefly saying
+                 what changed, then resolve it with the resolveReviewThread
+                 mutation, passing the thread id from the query above:
+                 `gh api graphql -f query='mutation{resolveReviewThread(input:
+                 {threadId:"THREAD_ID"}){thread{isResolved}}}'`
+               - If someone replied disagreeing or asking a question, answer it
+                 on that thread. Engage with the substance: if they are right,
+                 say so plainly and resolve; if they are not, explain why and
+                 leave it open. Never resolve a thread merely because it was
+                 replied to, and never resolve a thread a human opened.
+               - If it is still unaddressed, leave it open and do not repeat the
+                 same finding as a new comment later in this review.
+
+               A thread marked outdated only means the line moved, not that the
+               problem was fixed -- check the current code before deciding.
+
+            3. Dispatch exactly two synchronous general-purpose review agents in
                a single message so they run in parallel. Give each the same
                instructions: independently review this PR for correctness
                problems -- logic errors, broken invariants, mishandled edge
@@ -74,7 +99,7 @@ jobs:
                Tell them to ignore formatting handled by `npm run lint`, and to
                report nothing rather than pad the list.
 
-            3. Wait for both agents to return. Then validate their findings
+            4. Wait for both agents to return. Then validate their findings
                yourself against the real code. Keep a finding only if you can
                trace the specific failure it claims. Discard anything
                speculative, stylistic, already correct, or out of scope for the
@@ -82,13 +107,15 @@ jobs:
                proof -- verify anyway. Prefer discarding a doubtful finding over
                posting a false positive.
 
-            4. Post each surviving finding as an inline comment on the relevant
+            5. Post each surviving finding as an inline comment on the relevant
                line using mcp__github_inline_comment__create_inline_comment,
                including a committable suggestion where a concrete fix is clear.
+               Do not raise anything that already has an open thread from step 2.
 
-            5. End with a brief summary naming what you posted, and what you
-               investigated and rejected. If nothing survived validation, post
-               no comments and say so.
+            6. End with a brief summary naming what you posted, what you replied
+               to or resolved, and what you investigated and rejected. If nothing
+               survived validation and there were no threads to handle, post no
+               comments and say so.
           # --allowedTools is exclusive: anything not listed is denied, and in CI a
           # denial is silent -- the job still reports success with no review posted.
           # create_inline_comment is the action's purpose-built posting tool; without
