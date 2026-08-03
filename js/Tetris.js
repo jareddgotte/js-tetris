@@ -197,7 +197,7 @@ Game.prototype.updateAccessibleUi = function (announce, mode) {
   const score = String(commaSeparateNumber(this.score))
   const state = this.gameOver ? 'Game over' : (this.paused ? 'Paused' : 'Running')
   const message = this.gameOver
-    ? 'Final score ' + score + '.'
+    ? 'Game over. Use Restart Game to begin again.'
     : this.paused
       ? 'Press Start/Pause Game to begin or resume.'
       : 'Game running.'
@@ -210,6 +210,7 @@ Game.prototype.updateAccessibleUi = function (announce, mode) {
   if (accessibility.state) accessibility.state.textContent = state
   if (accessibility.score) accessibility.score.textContent = score
   if (accessibility.message) accessibility.message.textContent = message
+  if (accessibility.startPauseButton) accessibility.startPauseButton.disabled = Boolean(this.gameOver)
   if (accessibility.live && (announce || announcement !== this.lastAccessibilityAnnouncement)) {
     if (mode === 'restart') accessibility.live.textContent = ''
     accessibility.live.textContent = announcement

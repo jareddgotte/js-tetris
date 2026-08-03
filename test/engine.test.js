@@ -75,6 +75,11 @@ function loadEngine (randomValues = [], options = {}) {
     node.focus = function () {
       document.activeElement = node
     }
+    const dispatch = node.dispatchEvent
+    node.dispatchEvent = function (event) {
+      if (node.disabled && event.type === 'click') return true
+      return dispatch.call(node, event)
+    }
     return node
   }
 
@@ -595,6 +600,15 @@ test('visible controls update status text while the live region stays eventful',
   restart.dispatchEvent({ type: 'click' })
   assert.equal(game.paused, true)
   assert.deepEqual(live.textHistory.slice(-2), ['', 'Game restarted. Score 0.'])
+
+  game.gameOver = true
+  game.draw()
+  assert.equal(startPause.disabled, true)
+  assert.equal(state.textContent, 'Game over')
+  assert.equal(message.textContent, 'Game over. Use Restart Game to begin again.')
+  startPause.dispatchEvent({ type: 'click' })
+  assert.equal(game.gameOver, true)
+  assert.equal(game.paused, true)
 })
 
 test('keyboard input ignores editable and unrelated targets', () => {
