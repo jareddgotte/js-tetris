@@ -20,8 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      # write is required for Claude to post its reply. With read it runs, thinks,
+      # and then silently fails to answer -- the job still reports success.
+      pull-requests: write
+      issues: write
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
@@ -43,8 +45,12 @@ jobs:
           # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
           # prompt: 'Update the pull request description to include a summary of changes.'
 
-          # Optional: Add claude_args to customize behavior and configuration
+          # Adds inline-comment posting to the tag-mode default toolset (Glob, Grep,
+          # LS, Read, mcp__github_comment__update_claude_comment, and git add/commit/
+          # push/rm). Note that tag mode filters out custom Bash(...) entries here and
+          # keeps only mcp__github_* tools, so a Bash allowlist would have no effect:
+          # https://github.com/anthropics/claude-code-action/issues/724
+          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr *)'
 

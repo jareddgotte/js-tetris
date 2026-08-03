@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
 
@@ -29,6 +29,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          # The review reads the diff through the GitHub API (`gh pr diff`), never
+          # from local history, so a shallow checkout is sufficient.
           fetch-depth: 1
 
       - name: Run Claude Code Review
@@ -36,9 +38,74 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          # Deliberately does NOT use code-review@claude-code-plugins. That plugin
+          # spawns background agents and ends its turn to wait for them, which works
+          # interactively but not here: in the headless SDK, end_turn is completion,
+          # so the run terminates mid-review and posts nothing. See the PR that
+          # introduced this change for the captured evidence.
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request using the steps below, in order.
+
+            CRITICAL EXECUTION CONSTRAINT. You are running headless in CI. There
+            is no interactive session, so ending your turn ends the whole run.
+            Never call ScheduleWakeup. Never dispatch an agent with
+            run_in_background set to true. Every agent you dispatch must be
+            synchronous, so its result returns to you within the same turn. Do
+            not end your turn while any agent is outstanding or any confirmed
+            finding is still unposted.
+
+            1. Fetch the diff with `gh pr diff`, and read AGENTS.md. Treat
+               AGENTS.md as binding: it documents this repository's architecture
+               and invariants, including that `Game.allTets` is authoritative
+               while `Game.landed` is a derived lookup, and that the browser
+               runtime must stay dependency-free.
+
+            2. Dispatch exactly two synchronous general-purpose review agents in
+               a single message so they run in parallel. Give each the same
+               instructions: independently review this PR for correctness
+               problems -- logic errors, broken invariants, mishandled edge
+               cases, and behaviour contradicting a function's name, its
+               documentation, or the PR's stated intent. Tell each to trace the
+               code by hand and report, for every candidate issue, the file and
+               line, what goes wrong, and a concrete input that triggers it.
+               Tell them to ignore formatting handled by `npm run lint`, and to
+               report nothing rather than pad the list.
+
+            3. Wait for both agents to return. Then validate their findings
+               yourself against the real code. Keep a finding only if you can
+               trace the specific failure it claims. Discard anything
+               speculative, stylistic, already correct, or out of scope for the
+               diff. Where the two agents agree, that is corroboration, not
+               proof -- verify anyway. Prefer discarding a doubtful finding over
+               posting a false positive.
+
+            4. Post each surviving finding as an inline comment on the relevant
+               line using mcp__github_inline_comment__create_inline_comment,
+               including a committable suggestion where a concrete fix is clear.
+
+            5. End with a brief summary naming what you posted, and what you
+               investigated and rejected. If nothing survived validation, post
+               no comments and say so.
+          # --allowedTools is exclusive: anything not listed is denied, and in CI a
+          # denial is silent -- the job still reports success with no review posted.
+          # create_inline_comment is the action's purpose-built posting tool; without
+          # it the review hand-rolls `gh api ... -F line=N`, which is far more fragile.
+          # Bash is scoped to the read-only inspection commands the review needs.
+          # Agent/Task must be listed or the parallel review agents are denied.
+          # Both names are included because the allowlist is exclusive and a wrong
+          # name fails silently; the surplus one is simply unused.
+          # ScheduleWakeup is deliberately absent -- it is interactive-only and
+          # calling it is what stranded the plugin mid-review.
+          claude_args: '--allowedTools "Agent,Task,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"'
+          # If a review ever completes but posts nothing, add `show_full_output: true`
+          # here: failures in this workflow are otherwise indistinguishable from
+          # success, since the job reports green either way. Rerunning with
+          # ACTIONS_STEP_DEBUG is NOT a substitute -- it adds GitHub step logging only
+          # and emits no model output. Remove it again afterwards, since it writes
+          # full model output to this repository's public Actions logs.
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
