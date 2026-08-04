@@ -27,7 +27,7 @@ Changed behavior requires deterministic coverage in `test/engine.test.js`, with 
 
 `anthropics/claude-code-action` owns the byte-identical-default-workflow check for `.github/workflows/claude-code-review.yml` pull requests. If a PR changes that workflow, Claude skips execution even when the job stays green, so inspect the workflow logs for an actual run and posted review; do not treat green status as proof.
 
-Workflow-changing PRs need manual review plus post-merge verification. `claude.yml` is triggered by comment, review, and issue events, so this boundary only applies to `claude-code-review.yml`.
+Workflow-changing PRs need manual review plus post-merge verification. `claude.yml` is triggered by comment, review, and issue events, so this boundary only applies to `claude-code-review.yml`. Both workflow files carry inline comments explaining each non-obvious setting; read them before changing either file, and keep them accurate.
 
 ## Maintaining this file
 
