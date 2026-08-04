@@ -72,16 +72,35 @@ jobs:
                  isOutdated path line comments(first:20){nodes{author{login} body}}}}}}}'
 
                For each unresolved thread you opened:
-               - If the current code addresses the finding, reply briefly saying
-                 what changed, then resolve it with the resolveReviewThread
-                 mutation, passing the thread id from the query above:
+               - If the current code addresses the finding, reply briefly
+                 stating what changed. Do not write "Resolving", "Resolved", or
+                 any other word claiming the thread's state -- the reply is a
+                 comment, not a state transition, and resolution is proven only
+                 by the steps below.
+               - Then, as its own standalone tool call -- never joined to the
+                 reply or to any other command -- invoke:
                  `gh api graphql -f query='mutation{resolveReviewThread(input:
                  {threadId:"THREAD_ID"}){thread{isResolved}}}'`
+                 Inspect the response. Require
+                 `data.resolveReviewThread.thread.isResolved == true`. If the
+                 call is denied, errors, or returns `isResolved: false`, retry
+                 it exactly once, again as a standalone call.
+               - Whether or not the mutation reported success, re-run the
+                 read-only thread query from step 2 and require `isResolved ==
+                 true` for that thread before treating it as resolved or moving
+                 on. Prose and a successful-looking mutation response are not
+                 sufficient by themselves; only this follow-up query is.
+               - If the mutation and its one retry both fail, or the follow-up
+                 query still shows `isResolved: false`, leave the thread open.
+                 Do not claim resolution anywhere. State the exact failure (the
+                 error, the denial, or the false result) in the final summary
+                 instead.
                - If someone replied disagreeing or asking a question, answer it
                  on that thread. Engage with the substance: if they are right,
-                 say so plainly and resolve; if they are not, explain why and
-                 leave it open. Never resolve a thread merely because it was
-                 replied to, and never resolve a thread a human opened.
+                 say so plainly and resolve using the verified procedure above;
+                 if they are not, explain why and leave it open. Never resolve a
+                 thread merely because it was replied to, and never resolve a
+                 thread a human opened.
                - If it is still unaddressed, leave it open and do not repeat the
                  same finding as a new comment later in this review.
 
