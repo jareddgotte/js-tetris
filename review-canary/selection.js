@@ -17,7 +17,7 @@ function firstIndexAtLeast (values, minimum) {
 function clampToMaximum (value, maximum) {
   if (value < 0) return 0
   if (value > maximum) return maximum
-  return maximum
+  return value
 }
 
 module.exports = { clampToMaximum, firstIndexAtLeast }

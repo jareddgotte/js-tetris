@@ -24,3 +24,7 @@ test('clampToMaximum clamps a negative value to zero', () => {
 test('clampToMaximum clamps a value above the maximum', () => {
   assert.equal(clampToMaximum(12, 10), 10)
 })
+
+test('clampToMaximum preserves a value inside the range', () => {
+  assert.equal(clampToMaximum(5, 10), 5)
+})
