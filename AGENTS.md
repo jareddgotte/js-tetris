@@ -25,9 +25,9 @@ Changed behavior requires deterministic coverage in `test/engine.test.js`, with 
 
 ## Automated review workflows
 
-`.github/workflows/claude-code-review.yml` reviews pull requests; `claude.yml` responds to `@claude` mentions. Both fail silently: a misconfiguration produces a green check and no output, never a red one. Never treat a passing check as evidence that a review ran — confirm a comment was actually posted. The workflow files carry inline comments explaining each non-obvious setting; read them before changing either file, and keep them accurate.
+`anthropics/claude-code-action` owns the byte-identical-default-workflow check for `.github/workflows/claude-code-review.yml` pull requests. If a PR changes that workflow, Claude skips execution even when the job stays green, so inspect the workflow logs for an actual run and posted review; do not treat green status as proof. More generally, both workflows can fail silently on misconfiguration, so never treat a green check alone as evidence that Claude ran.
 
-`claude-code-review.yml` triggers on `pull_request`, so it runs from the pull request's own copy of the file, and the action refuses to run when that copy differs from the default branch. Changes to it are therefore unreviewable by the bot and cannot be tested before merging, and a long-lived branch needs the default branch merged in before its review will run at all. `claude.yml` is triggered by comment, review, and issue events instead, so this does not apply to it in the same way.
+Workflow-changing PRs need manual review plus post-merge verification. `claude.yml`'s `issue_comment`, `issues`, and `pull_request_review_comment` triggers run from the default branch, but its `pull_request_review` trigger runs from the merge ref like `claude-code-review.yml` does, so this boundary is not exclusive to `claude-code-review.yml`. Repository workflow inline comments describe other substantive publication and tool limits, but they do not implement or own the byte-identical-default-workflow guard.
 
 ## Maintaining this file
 
