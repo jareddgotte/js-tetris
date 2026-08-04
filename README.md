@@ -7,6 +7,7 @@ The browser game has no third-party runtime libraries, frameworks, production de
 ## What to expect
 
 - The game loads from the canonical `index.html` entry point.
+- On desktop, Controls, Play, and High Scores share one row; below 798 CSS pixels they stack in that order without horizontal clipping.
 - It starts paused.
 - Start/Pause Game or `P`/`S` begins or pauses play.
 - Restart Game or `R` resets the current round.

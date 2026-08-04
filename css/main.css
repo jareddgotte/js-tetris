@@ -50,7 +50,7 @@ button:focus-visible,
 }
 #main {
   color: #000;
-  width: min(100%, 48rem);
+  width: min(100%, 49.875rem);
   margin: 0 auto;
   padding: .5rem;
   box-sizing: border-box;
@@ -68,6 +68,8 @@ button:focus-visible,
   text-align: center;
   margin: 0 auto;
   display: block;
+  max-width: 100%;
+  height: auto;
 }
 .panel {
   border: 2px solid black;
@@ -80,9 +82,6 @@ button:focus-visible,
 .panel h2 {
   line-height: 1.2;
   text-align: center;
-}
-#gameplay {
-  flex-basis: 16.5rem;
 }
 .game-actions {
   display: flex;
@@ -149,13 +148,13 @@ button:focus-visible,
   line-height: 1.4;
 }
 #footer {
-  width: min(100%, 48rem);
+  width: min(100%, 49.875rem);
   margin: 0 auto 1rem;
   padding: 0 .5rem;
   box-sizing: border-box;
   overflow: hidden;
 }
-@media (max-width: 48rem) {
+@media (max-width: 49.8125rem) {
   #main {
     padding-inline: .5rem;
   }

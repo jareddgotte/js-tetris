@@ -8,13 +8,16 @@ js-tetris is a vanilla-JavaScript and HTML5 Canvas browser game. Keep the browse
 
 ## Prerequisites and setup
 
-Running the game requires only a modern browser and a static server; npm is not part of the browser runtime. Development checks require Node.js 22 and npm.
+Running the game requires only a modern browser and a static server; npm is not part of the browser runtime. Development checks require Node.js 22, npm, Python 3, and the pinned Playwright browser.
 
 From a clean checkout, install the pinned development tooling without running package lifecycle scripts:
 
 ```sh
 npm ci --ignore-scripts
+PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install --with-deps chromium
 ```
+
+The browser install command also installs required system packages on supported Debian/Ubuntu systems. On other platforms, follow Playwright's printed dependency guidance.
 
 Serve the repository root, then open <http://localhost:8000/>:
 
@@ -31,9 +34,10 @@ Run the frozen checks tracked by `package.json` and the pull-request workflow:
 ```sh
 npm run lint
 npm test
+npm run test:browser
 ```
 
-`npm test` runs the deterministic Node test suite in `test/engine.test.js`. To apply optional Standard Style fixes locally, run:
+`npm test` runs the deterministic Node test suite in `test/engine.test.js`. `npm run test:browser` serves the canonical page and verifies real computed panel geometry, narrow-screen clipping, and keyboard reachability in the pinned browser. To apply optional Standard Style fixes locally, run:
 
 ```sh
 npm run format

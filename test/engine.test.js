@@ -553,16 +553,19 @@ test('keyboard actions are mapped by name and prevent default only when handled'
   assert.equal(game.paused, false)
 })
 
-test('index.html and main.css expose baseline accessible semantics and reflow hooks', () => {
+test('index.html and main.css expose accessible semantics and intentional panel reflow', () => {
   assert.match(indexSource, /<meta name="viewport" content="width=device-width, initial-scale=1">/)
   assert.match(indexSource, /id="game-start-pause"/)
   assert.match(indexSource, /id="game-restart"/)
   assert.match(indexSource, /aria-labelledby="gameplay-title game-instructions game-status-title"/)
   assert.match(indexSource, /id="game-live-status" class="sr-only" aria-live="polite" aria-atomic="true"/)
   assert.equal(indexSource.includes('<br>'), false)
+  assert.ok(indexSource.indexOf('id="public-controls"') < indexSource.indexOf('id="gameplay"'))
+  assert.ok(indexSource.indexOf('id="gameplay"') < indexSource.indexOf('id="high-scores"'))
   assert.match(stylesSource, /button:focus-visible/)
   assert.match(stylesSource, /#canvas:focus-visible/)
-  assert.match(stylesSource, /@media \(max-width: 48rem\)/)
+  assert.match(stylesSource, /width: min\(100%, 49\.875rem\)/)
+  assert.match(stylesSource, /@media \(max-width: 49\.8125rem\)/)
   assert.match(stylesSource, /flex-wrap: wrap/)
   assert.match(stylesSource, /grid-template-columns: minmax\(0, 1fr\) auto/)
 })
