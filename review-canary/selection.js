@@ -11,4 +11,13 @@ function firstIndexAtLeast (values, minimum) {
   return -1
 }
 
-module.exports = { firstIndexAtLeast }
+/**
+ * Clamp value to the inclusive range from zero through a non-negative maximum.
+ */
+function clampToMaximum (value, maximum) {
+  if (value < 0) return 0
+  if (value > maximum) return maximum
+  return maximum
+}
+
+module.exports = { clampToMaximum, firstIndexAtLeast }
