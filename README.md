@@ -7,12 +7,10 @@ The browser game has no third-party runtime libraries, frameworks, production de
 ## What to expect
 
 - The game loads from the canonical `index.html` entry point.
-- On desktop, Controls, Play, and High Scores share one row; below 798 CSS pixels they stack in that order without horizontal clipping.
-- It starts paused.
-- Start/Pause Game or `P`/`S` begins or pauses play.
-- Restart Game or `R` resets the current round.
+- On desktop, compact Controls, canvas, and High Scores columns share the historical 712 CSS-pixel composition; below 712 pixels they stack without horizontal clipping.
+- It starts paused. `P` or `S` begins or pauses play, and `R` resets the current round.
 - Arrow keys move and rotate; Space drops the piece instantly.
-- Status text and the live region mirror game state, while Start/Pause disables at game over and Restart remains the recovery path.
+- The page and canvas have concise nonvisual labels and keyboard instructions, but the visual canvas game does not claim full screen-reader playability or announce changing gameplay state.
 - High scores persist in a browser cookie across sessions, and are repaired or ignored if the saved value is invalid, unreadable, or unwritable.
 
 ## Play locally

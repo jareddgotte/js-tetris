@@ -15,7 +15,6 @@ What changes for users or maintainers?
 - [ ] Deterministic tests added or updated for changed behavior, or not applicable
 - [ ] `npm run lint`
 - [ ] `npm test`
-- [ ] `npm run test:browser`
 - [ ] `git diff --check`
 
 ## Documentation impact
