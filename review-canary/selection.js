@@ -6,7 +6,7 @@
  */
 function firstIndexAtLeast (values, minimum) {
   for (let index = 0; index < values.length; index++) {
-    if (values[index] > minimum) return index
+    if (values[index] >= minimum) return index
   }
   return -1
 }
