@@ -105,22 +105,7 @@ function loadEngine (randomValues = [], options = {}) {
 
   const nodes = {
     canvas,
-    'game-fallback': createNode('P', { textContent: 'If the canvas cannot render, use the buttons and keyboard shortcuts above.' }),
-    'game-instructions': createNode('P', { textContent: 'Use the Start/Pause Game button or P/S to begin, arrows and Space to play, and R to restart.' }),
-    'game-live-status': createNode('P', { textContent: '' }),
-    'game-restart': createNode('BUTTON', { textContent: 'Restart Game' }),
-    'game-start-pause': createNode('BUTTON', { textContent: 'Start/Pause Game' }),
-    'game-status': createNode('SECTION'),
-    'game-status-message': createNode('P', { textContent: 'Press Start/Pause Game to begin.' }),
-    'game-status-score': createNode('SPAN', { textContent: '0' }),
-    'game-status-state': createNode('SPAN', { textContent: 'Paused' }),
-    'game-status-title': createNode('H3', { textContent: 'Status' }),
-    'gameplay-title': createNode('H2', { textContent: 'Play' }),
-    'high-scores': createNode('SECTION'),
-    'high-scores-list': createNode('OL'),
-    'high-scores-title': createNode('H2', { textContent: 'High Scores' }),
-    'public-controls': createNode('SECTION'),
-    'public-controls-title': createNode('H2', { textContent: 'Controls' })
+    'high-scores-list': createNode('OL')
   }
 
   const document = createEventTarget()
@@ -553,76 +538,24 @@ test('keyboard actions are mapped by name and prevent default only when handled'
   assert.equal(game.paused, false)
 })
 
-test('index.html and main.css expose baseline accessible semantics and reflow hooks', () => {
+test('index.html and main.css restore compact columns with honest minimal semantics', () => {
   assert.match(indexSource, /<meta name="viewport" content="width=device-width, initial-scale=1">/)
-  assert.match(indexSource, /id="game-start-pause"/)
-  assert.match(indexSource, /id="game-restart"/)
-  assert.match(indexSource, /aria-labelledby="gameplay-title game-instructions game-status-title"/)
-  assert.match(indexSource, /id="game-live-status" class="sr-only" aria-live="polite" aria-atomic="true"/)
-  assert.equal(indexSource.includes('<br>'), false)
-  assert.match(stylesSource, /button:focus-visible/)
+  assert.match(indexSource, /<h1 id="page-title"><img[^>]+alt="Tetris"><\/h1>/)
+  assert.match(indexSource, /id="game-instructions" class="sr-only"/)
+  assert.match(indexSource, /aria-label="Tetris game canvas"/)
+  assert.match(indexSource, /aria-describedby="game-instructions"/)
+  assert.equal(indexSource.includes('aria-live'), false)
+  assert.equal(indexSource.includes('id="gameplay"'), false)
+  assert.equal(indexSource.includes('id="game-status"'), false)
+  assert.equal(indexSource.includes('<button'), false)
+  assert.ok(indexSource.indexOf('id="public-controls"') < indexSource.indexOf('id="canvas"'))
+  assert.ok(indexSource.indexOf('id="canvas"') < indexSource.indexOf('id="high-scores"'))
   assert.match(stylesSource, /#canvas:focus-visible/)
-  assert.match(stylesSource, /@media \(max-width: 48rem\)/)
-  assert.match(stylesSource, /flex-wrap: wrap/)
-  assert.match(stylesSource, /grid-template-columns: minmax\(0, 1fr\) auto/)
-})
-
-test('visible controls update status text while the live region stays eventful', () => {
-  const engine = loadEngine()
-  const game = engine.createGame()
-  const startPause = engine.document.getElementById('game-start-pause')
-  const restart = engine.document.getElementById('game-restart')
-  const state = engine.document.getElementById('game-status-state')
-  const score = engine.document.getElementById('game-status-score')
-  const message = engine.document.getElementById('game-status-message')
-  const live = engine.document.getElementById('game-live-status')
-
-  assert.equal(engine.canvas.tabIndex, 0)
-  assert.equal(state.textContent, 'Paused')
-  assert.equal(score.textContent, '0')
-  assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
-  assert.equal(live.textContent, 'Paused. Score 0.')
-
-  game.draw()
-  assert.equal(live.textContent, 'Paused. Score 0.')
-
-  live.textHistory.length = 0
-  startPause.dispatchEvent({ type: 'click' })
-  assert.equal(game.paused, false)
-  assert.equal(state.textContent, 'Running')
-  assert.equal(message.textContent, 'Game running.')
-  assert.match(live.textContent, /^Running\. Score 0\.$/)
-
-  game.score = 1200
-  game.draw()
-  assert.equal(score.textContent, '1,200')
-  assert.match(live.textContent, /^Running\. Score 1,200\.$/)
-
-  const runningRestartHistory = live.textHistory.length
-  restart.dispatchEvent({ type: 'click' })
-  assert.equal(game.paused, true)
-  assert.equal(score.textContent, '0')
-  assert.equal(state.textContent, 'Paused')
-  assert.equal(message.textContent, 'Press Start/Pause Game to begin or resume.')
-  assert.deepEqual(live.textHistory.slice(runningRestartHistory), ['', 'Game restarted. Score 0.'])
-  assert.equal(live.textHistory.slice(runningRestartHistory).includes('Paused. Score 0.'), false)
-
-  const pausedRestartHistory = live.textHistory.length
-  restart.dispatchEvent({ type: 'click' })
-  assert.equal(game.paused, true)
-  assert.deepEqual(live.textHistory.slice(pausedRestartHistory), ['', 'Game restarted. Score 0.'])
-  assert.equal(live.textHistory.slice(pausedRestartHistory).includes('Paused. Score 0.'), false)
-
-  game.gameOver = true
-  game.draw()
-  assert.equal(startPause.disabled, true)
-  assert.equal(state.textContent, 'Game over')
-  assert.equal(message.textContent, 'Game over. Use Restart Game to begin again.')
-  const gameOverRestartHistory = live.textHistory.length
-  startPause.dispatchEvent({ type: 'click' })
-  assert.equal(game.gameOver, true)
-  assert.equal(game.paused, true)
-  assert.deepEqual(live.textHistory.slice(gameOverRestartHistory), [])
+  assert.match(stylesSource, /width: 712px/)
+  assert.match(stylesSource, /width: 250px/)
+  assert.match(stylesSource, /width: 200px/)
+  assert.match(stylesSource, /@media \(max-width: 44\.4375rem\)/)
+  assert.equal(stylesSource.includes('display: flex'), false)
 })
 
 test('keyboard input ignores editable and unrelated targets', () => {
@@ -630,7 +563,7 @@ test('keyboard input ignores editable and unrelated targets', () => {
   const { tet } = activeTetGame(engine)
   const input = { tagName: 'INPUT' }
   const link = { tagName: 'A' }
-  const button = engine.document.getElementById('game-start-pause')
+  const button = { tagName: 'BUTTON' }
 
   const editable = engine.dispatchKey({ key: 'ArrowLeft', code: 'ArrowLeft', target: input })
   assert.equal(editable.defaultPrevented, false)

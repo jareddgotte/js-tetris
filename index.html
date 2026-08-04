@@ -17,90 +17,60 @@
     <!-- Banner inspired from font: The FontStruction "Tetromino (by Piotr
     Klarowski)" (http://fontstruct.com/fontstructions/show/118906) by
     "ecaGraphics" -->
-    <h1><img id="tetris-banner" src="img/TETRIS.png" alt="Tetris logo"></h1>
-
-    <section class="panel" id="gameplay" aria-labelledby="gameplay-title">
-      <h2 id="gameplay-title">Play</h2>
-      <p id="game-instructions">
-        Use the Start/Pause Game button or P/S to begin, arrows and Space to play,
-        and R to restart.
-      </p>
-      <div class="game-actions" aria-label="Game controls">
-        <button id="game-start-pause" type="button">Start/Pause Game</button>
-        <button id="game-restart" type="button">Restart Game</button>
-      </div>
-      <canvas
-        id="canvas"
-        tabindex="0"
-        aria-labelledby="gameplay-title game-instructions game-status-title"
-        aria-describedby="game-fallback"
-      >
-        Tetris gameplay canvas. Use the Start/Pause Game and Restart Game buttons,
-        then the arrow keys, Space, P, S, and R.
-      </canvas>
-      <p id="game-fallback">
-        If the canvas cannot render, use the buttons and keyboard shortcuts above.
-      </p>
-      <section id="game-status" aria-labelledby="game-status-title">
-        <h3 id="game-status-title">Status</h3>
-        <p><span class="status-label">State:</span> <span id="game-status-state">Paused</span></p>
-        <p><span class="status-label">Score:</span> <span id="game-status-score">0</span></p>
-        <p id="game-status-message">Press Start/Pause Game to begin.</p>
-        <p id="game-live-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
-      </section>
-    </section>
+    <h1 id="page-title"><img id="tetris-banner" src="img/TETRIS.png" alt="Tetris"></h1>
+    <p id="game-instructions" class="sr-only">
+      This webpage contains a visual Tetris game. Keyboard controls: Up Arrow
+      rotates; Left, Right, and Down Arrows move; Space drops; P or S starts or
+      pauses; and R restarts.
+    </p>
 
     <section class="panel" id="public-controls" aria-labelledby="public-controls-title">
       <h2 id="public-controls-title">Controls</h2>
       <ul>
-        <li>
+        <li class="control-headings">
           <h3>Control</h3>
           <h3>Key</h3>
         </li>
         <li>
-          <div>
-            <span>Start/Pause Game</span>
-          </div>
-          <span><b>P</b> or <b>S</b> Key</span>
-        </li>
-        <li>
-          <div>
-            <span>Restart Game</span>
-          </div>
-          <span><b>R</b> Key</span>
-        </li>
-        <li>
-          <div>
-            <span>Rotate</span>
-          </div>
+          <div><span>Rotate</span></div>
           <span><b>Up</b> Arrow Key</span>
         </li>
         <li>
-          <div>
-            <span>Move Left</span>
-          </div>
+          <div><span>Move Left</span></div>
           <span><b>Left</b> Arrow Key</span>
         </li>
         <li>
-          <div>
-            <span>Move Right</span>
-          </div>
-          <span><b>Right</b> Arrow Key</span>
+          <div><span>Move Right</span></div>
+          <span><b>Right</b> Arrow</span>
         </li>
         <li>
-          <div>
-            <span>Move Down</span>
-          </div>
-          <span><b>Down</b> Arrow Key</span>
+          <div><span>Move Down</span></div>
+          <span><b>Down</b> Arrow</span>
         </li>
         <li>
-          <div>
-            <span>Instantly Move Down</span>
-          </div>
+          <div><span>Instantly Move Down</span></div>
           <span><b>Space</b> Bar</span>
+        </li>
+        <li class="game-control-separator">
+          <div><span>Pause Game</span></div>
+          <span><b>S</b> or <b>P</b> Key</span>
+        </li>
+        <li>
+          <div><span>Restart Game</span></div>
+          <span><b>R</b> Key</span>
         </li>
       </ul>
     </section>
+
+    <canvas
+      id="canvas"
+      tabindex="0"
+      role="img"
+      aria-label="Tetris game canvas"
+      aria-describedby="game-instructions"
+    >
+      Tetris game canvas. Use the keyboard controls described on this page.
+    </canvas>
 
     <section class="panel" id="high-scores" aria-labelledby="high-scores-title">
       <h2 id="high-scores-title">High Scores</h2>

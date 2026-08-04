@@ -1,1 +1,4 @@
 node_modules/
+.browser-libs/
+test-results/
+playwright-report/
