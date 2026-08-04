@@ -5,10 +5,12 @@
   "description": "Development checks for the dependency-free browser Tetris game",
   "scripts": {
     "test": "node --test test/engine.test.js",
+    "test:browser": "PLAYWRIGHT_BROWSERS_PATH=0 playwright test",
     "lint": "standard \"js/**/*.js\" \"test/**/*.js\"",
     "format": "standard --fix \"js/**/*.js\" \"test/**/*.js\""
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "standard": "17.1.2"
   },
   "engines": {

@@ -114,22 +114,9 @@ function Game (canvasId, highScoresListId, devMode) {
   this.paused = true
   this.cascadeLoops = new Set()
   this.highScoresListId = highScoresListId
-  this.accessibility = {
-    live: null,
-    state: null,
-    score: null,
-    message: null,
-    startPauseButton: null,
-    restartButton: null
-  }
-  this.lastAccessibilityAnnouncement = ''
-  this.lastAccessibilityState = ''
-  this.lastAccessibilityScore = null
-  this.suppressAccessibleAnnouncement = false
 
   // init functions
   this.displayHighScores()
-  this.bindAccessibleUi()
   this.createTet()
   this.handleEvents()
 }
@@ -166,60 +153,6 @@ Game.prototype.handleEvents = function () {
       e.preventDefault()
     }
   })
-}
-
-Game.prototype.bindAccessibleUi = function () {
-  const that = this
-  const accessibility = this.accessibility
-  accessibility.live = document.getElementById('game-live-status')
-  accessibility.state = document.getElementById('game-status-state')
-  accessibility.score = document.getElementById('game-status-score')
-  accessibility.message = document.getElementById('game-status-message')
-  accessibility.startPauseButton = document.getElementById('game-start-pause')
-  accessibility.restartButton = document.getElementById('game-restart')
-
-  if (accessibility.startPauseButton) {
-    accessibility.startPauseButton.addEventListener('click', function () {
-      that.performKeyboardAction({ name: 'pause' })
-      if (typeof that.canvas.focus === 'function') that.canvas.focus()
-    })
-  }
-  if (accessibility.restartButton) {
-    accessibility.restartButton.addEventListener('click', function () {
-      that.performKeyboardAction({ name: 'reset' })
-      if (typeof that.canvas.focus === 'function') that.canvas.focus()
-    })
-  }
-
-  this.updateAccessibleUi(true)
-}
-
-Game.prototype.updateAccessibleUi = function (announce, mode) {
-  const accessibility = this.accessibility
-  const score = String(commaSeparateNumber(this.score))
-  const state = this.gameOver ? 'Game over' : (this.paused ? 'Paused' : 'Running')
-  const message = this.gameOver
-    ? 'Game over. Use Restart Game to begin again.'
-    : this.paused
-      ? 'Press Start/Pause Game to begin or resume.'
-      : 'Game running.'
-  const announcement = mode === 'restart'
-    ? 'Game restarted. Score ' + score + '.'
-    : this.gameOver
-      ? 'Game over. Final score ' + score + '.'
-      : state + '. Score ' + score + '.'
-
-  if (accessibility.state) accessibility.state.textContent = state
-  if (accessibility.score) accessibility.score.textContent = score
-  if (accessibility.message) accessibility.message.textContent = message
-  if (accessibility.startPauseButton) accessibility.startPauseButton.disabled = Boolean(this.gameOver)
-  if (accessibility.live && !this.suppressAccessibleAnnouncement && (announce || announcement !== this.lastAccessibilityAnnouncement)) {
-    if (mode === 'restart') accessibility.live.textContent = ''
-    accessibility.live.textContent = announcement
-    this.lastAccessibilityAnnouncement = announcement
-  }
-  this.lastAccessibilityState = state
-  this.lastAccessibilityScore = score
 }
 
 Game.prototype.isGameplayTarget = function (target) {
@@ -362,13 +295,7 @@ Game.prototype.performKeyboardAction = function (action) {
       this.paused = true
       this.score = 0
       this.updateScore = true
-      this.suppressAccessibleAnnouncement = true
-      try {
-        this.createTet()
-      } finally {
-        this.suppressAccessibleAnnouncement = false
-      }
-      this.updateAccessibleUi(true, 'restart')
+      this.createTet()
       return true
     case 'devUp':
       if (this.devModeOn) {
@@ -650,7 +577,6 @@ Game.prototype.draw = function () {
     c.globalAlpha = 1
     this.displayHighScores()
   }
-  this.updateAccessibleUi(false)
 }
 
 /**
@@ -680,7 +606,6 @@ Game.prototype.createTet = function () {
     this.newTet = true
     clearInterval(this.loop)
     this.clearCascadeLoops()
-    this.updateAccessibleUi(true)
     return
   } else this.allTets.push(this.currentTet)
   this.draw()
