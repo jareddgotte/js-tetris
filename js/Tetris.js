@@ -112,6 +112,7 @@ function Game (canvasId, highScoresListId, devMode) {
       this.canvasWidth)
   this.landed = []
   this.paused = true
+  this.cascadeLoops = new Set()
   this.highScoresListId = highScoresListId
   this.accessibility = {
     live: null,
@@ -228,6 +229,23 @@ Game.prototype.isGameplayTarget = function (target) {
   return false
 }
 
+/**
+ * This method clears every currently-scheduled row-clear cascade timer. More
+ * than one can be in flight at once when a new Tet lands and clears a row
+ * while an earlier cascade is still settling, so every timer id is tracked in
+ * `cascadeLoops` rather than a single scalar, and every cleanup path (reset,
+ * dev fixtures, game over) must clear the whole set to avoid leaving an
+ * orphaned timer able to mutate `allTets` after the session it belongs to has
+ * ended.
+ * @author Jared Gotte <jareddgotte@gmail.com>
+ */
+Game.prototype.clearCascadeLoops = function () {
+  this.cascadeLoops.forEach(function (id) {
+    clearInterval(id)
+  })
+  this.cascadeLoops.clear()
+}
+
 Game.prototype.pauseGame = function () {
   clearInterval(this.loop)
   this.paused = true
@@ -336,6 +354,7 @@ Game.prototype.performKeyboardAction = function (action) {
     case 'reset':
       this.allTets = []
       clearInterval(this.loop)
+      this.clearCascadeLoops()
       this.currentTet = null
       this.gameOver = false
       this.newTet = true
@@ -363,6 +382,7 @@ Game.prototype.performKeyboardAction = function (action) {
     case 'devFixture':
       if (this.devModeOn) {
         this.allTets = []
+        this.clearCascadeLoops()
         this.gameOver = false
         this.score = 0
         this.updateScore = true
@@ -376,6 +396,7 @@ Game.prototype.performKeyboardAction = function (action) {
       if (this.devModeOn) {
         this.gameOver = true
         clearInterval(this.loop)
+        this.clearCascadeLoops()
         // this.score = 1939999955999999 // near max
         this.score = Math.random() * 100000
         this.updateScore = true
@@ -658,6 +679,7 @@ Game.prototype.createTet = function () {
     this.gameOver = true
     this.newTet = true
     clearInterval(this.loop)
+    this.clearCascadeLoops()
     this.updateAccessibleUi(true)
     return
   } else this.allTets.push(this.currentTet)
@@ -1330,7 +1352,8 @@ Tet.prototype.collided = function () {
   const that = this
   let movingTets = [0]
   let tetsMoved
-  const moveLoop = setInterval(function () {
+  const cascadeLoop = setInterval(function () {
+    if (that.game.paused) return // freeze cascade motion while paused or backgrounded; resumes on the next unpaused tick
     movingTets = []
     tetsMoved = true
     while (tetsMoved) {
@@ -1355,10 +1378,12 @@ Tet.prototype.collided = function () {
     }
     that.game.draw()
     if (movingTets.length === 0) {
-      clearInterval(moveLoop)
+      clearInterval(cascadeLoop)
+      that.game.cascadeLoops.delete(cascadeLoop)
       that.collided()
     }
   }, 200)
+  that.game.cascadeLoops.add(cascadeLoop)
 }
 
 /**
