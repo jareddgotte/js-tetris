@@ -27,7 +27,7 @@ Changed behavior requires deterministic coverage in `test/engine.test.js`, with 
 
 `anthropics/claude-code-action` owns the byte-identical-default-workflow check for `.github/workflows/claude-code-review.yml` pull requests. If a PR changes that workflow, Claude skips execution even when the job stays green, so inspect the workflow logs for an actual run and posted review; do not treat green status as proof. More generally, both workflows can fail silently on misconfiguration, so never treat a green check alone as evidence that Claude ran.
 
-Workflow-changing PRs need manual review plus post-merge verification. `claude.yml`'s `issue_comment`, `issues`, and `pull_request_review_comment` triggers run from the default branch, but its `pull_request_review` trigger runs from the merge ref like `claude-code-review.yml` does, so this boundary is not exclusive to `claude-code-review.yml`. Repository workflow inline comments describe other substantive publication and tool limits, but they do not implement or own the byte-identical-default-workflow guard.
+Workflow-changing PRs need manual review plus post-merge verification. `claude.yml`'s `issue_comment` and `issues` triggers run from the default branch, but its `pull_request_review` and `pull_request_review_comment` triggers run from the merge ref like `claude-code-review.yml` does, so this boundary is not exclusive to `claude-code-review.yml`. Repository workflow inline comments describe other substantive publication and tool limits, but they do not implement or own the byte-identical-default-workflow guard.
 
 ## Maintaining this file
 
